@@ -1,6 +1,8 @@
 import React from 'react';
 import { AccessCard } from '@/components/landing/AccessCard';
-import { UtensilsCrossed } from 'lucide-react';
+import { FoodSlider } from '@/components/landing/FoodSlider';
+import { Footer } from '@/components/layout/Footer';
+import ruLogo from '@/assets/ru-logo.jpg';
 
 interface LandingProps {
   onLogin: () => void;
@@ -14,9 +16,13 @@ export function Landing({ onLogin }: LandingProps) {
       
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-8">
         {/* Logo & Title */}
-        <div className="text-center mb-12 animate-fade-in">
-          <div className="w-20 h-20 mx-auto mb-6 rounded-2xl gradient-primary flex items-center justify-center shadow-glow">
-            <UtensilsCrossed className="w-10 h-10 text-primary-foreground" />
+        <div className="text-center mb-8 animate-fade-in">
+          <div className="w-24 h-24 mx-auto mb-6 rounded-full overflow-hidden border-4 border-primary/20 shadow-xl">
+            <img 
+              src={ruLogo} 
+              alt="Redeemers University Logo" 
+              className="w-full h-full object-cover"
+            />
           </div>
           
           <h1 className="font-display text-4xl md:text-5xl font-bold text-foreground mb-3">
@@ -30,18 +36,20 @@ export function Landing({ onLogin }: LandingProps) {
           </p>
         </div>
 
+        {/* Food Slider */}
+        <div className="w-full mb-10 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+          <FoodSlider />
+        </div>
+
         {/* Access Cards */}
         <div className="grid md:grid-cols-2 gap-6 w-full max-w-2xl animate-fade-in" style={{ animationDelay: '0.2s' }}>
           <AccessCard type="cashier" onSuccess={onLogin} />
           <AccessCard type="admin" onSuccess={onLogin} />
         </div>
-
-        {/* Footer */}
-        <footer className="mt-12 text-center text-sm text-muted-foreground animate-fade-in" style={{ animationDelay: '0.4s' }}>
-          <p>© 2024 Redeemers University. All rights reserved.</p>
-          <p className="mt-1">Powered by New Era Technology</p>
-        </footer>
       </div>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }
