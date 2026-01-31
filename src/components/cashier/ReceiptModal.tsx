@@ -85,8 +85,8 @@ const POSReceipt = ({
 
       {/* Header: Name and Location */}
       <div className="text-center font-extrabold text-[14px] mb-1 relative z-10 leading-tight tracking-wide">
-        <div>Redeemer's University</div>
-        <div className="text-[12px]">New Era Cafeteria</div>
+        <div>New Era Cafeteria</div>
+        <div className="text-[12px]">Redeemer's University</div>
         <div className="font-normal text-[10px]">Main Campus, Ede</div>
       </div>
 
