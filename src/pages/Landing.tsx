@@ -36,9 +36,6 @@ export function Landing({ onLogin }: LandingProps) {
           <p className="text-lg sm:text-xl text-gradient font-semibold mb-2">
             New Era Cafeteria
           </p>
-          <p className="text-muted-foreground max-w-md mx-auto text-sm sm:text-base px-4">
-            Welcome to our Point of Sale system. Select your role to continue.
-          </p>
         </div>
 
         {/* Food Slider */}

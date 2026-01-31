@@ -61,8 +61,8 @@ const POSReceipt = ({
 
   return (
     <div
-      className="pos-receipt bg-white p-4 font-mono text-xs relative"
-      style={{ width: "80mm", maxWidth: "80mm" }}
+      className="pos-receipt bg-white p-2 font-mono text-xs relative"
+      style={{ width: "58mm", maxWidth: "58mm" }}
     >
       {/* Watermark Logo */}
       <div
@@ -80,13 +80,41 @@ const POSReceipt = ({
           }}
         />
       </div>
-
-      {/* Header */}
-      <div className="text-center mb-3 relative z-10">
-        <h2 className="font-bold text-sm">Redeemers University</h2>
-        <p className="text-[10px]">New Era Cafeteria</p>
-        <p className="text-[10px]">Ede, Osun State</p>
-        <p className="font-semibold text-xs mt-2 uppercase">{type} RECEIPT</p>
+      <div
+        className="pos-receipt bg-white p-2 font-mono text-xs relative overflow-visible"
+        style={{
+          width: "58mm",
+          maxWidth: "58mm",
+          minHeight: "auto",
+          height: "auto",
+          boxSizing: "border-box",
+        }}
+      >
+        {/* Watermark Logo */}
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "auto",
+            zIndex: 0,
+            opacity: 0.25,
+            pointerEvents: "none",
+          }}
+        >
+          <img
+            src="/logo.png"
+            alt="Watermark"
+            style={{
+              width: "40mm",
+              height: "auto",
+              objectFit: "contain",
+              margin: "8mm 0 0 4mm",
+              display: "block",
+            }}
+          />
+        </div>
       </div>
 
       <div className="border-t border-dashed border-gray-400 my-2 relative z-10"></div>
@@ -152,6 +180,8 @@ export function ReceiptModal({ order, isOpen, onClose }: ReceiptModalProps) {
 
   const handlePrint = (type?: "food" | "drinks") => {
     // Create a hidden iframe for printing
+    // Note: Browsers do not allow bypassing the print dialog for security reasons.
+    // The print window will open and focus, but the user must confirm printing.
     const printFrame = document.createElement("iframe");
     printFrame.style.position = "absolute";
     printFrame.style.width = "0";
@@ -171,18 +201,28 @@ export function ReceiptModal({ order, isOpen, onClose }: ReceiptModalProps) {
           <style>
             @media print {
               @page {
-                size: 80mm auto;
+                size: 58mm auto;
                 margin: 0;
               }
-              body {
+              html, body {
                 margin: 0;
                 padding: 0;
-                width: 80mm;
+                width: 58mm;
+                min-height: 0 !important;
+                height: auto !important;
               }
               .pos-receipt {
-                width: 80mm !important;
-                max-width: 80mm !important;
+                width: 58mm !important;
+                max-width: 58mm !important;
                 font-family: 'Courier New', monospace;
+                font-size: 10px;
+                padding: 0.5mm 0.5mm;
+                margin: 0;
+                box-sizing: border-box;
+                min-height: 0 !important;
+                height: auto !important;
+                overflow: visible !important;
+                position: relative;
               }
             }
             body {
@@ -191,10 +231,17 @@ export function ReceiptModal({ order, isOpen, onClose }: ReceiptModalProps) {
               padding: 0;
             }
             .pos-receipt {
-              width: 80mm;
-              max-width: 80mm;
+              width: 58mm;
+              max-width: 58mm;
               background: white;
-              padding: 8mm;
+              padding: 0.5mm 0.5mm;
+              margin: 0;
+              font-size: 10px;
+              box-sizing: border-box;
+              min-height: 0 !important;
+              height: auto !important;
+              overflow: visible !important;
+              position: relative;
             }
           </style>
         </head>
