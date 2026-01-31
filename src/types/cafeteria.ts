@@ -32,4 +32,63 @@ export interface CategorySales {
   percentage: number;
 }
 
-export type UserRole = 'cashier' | 'admin' | null;
+// Enhanced role types
+export type UserRole = 'superadmin' | 'admin' | 'cashier' | null;
+
+// Access code for cashier/admin login
+export interface AccessCode {
+  id: string;
+  code: string;
+  role: 'cashier' | 'admin';
+  createdBy: string;
+  createdAt: Date;
+  expiresAt: Date | null;
+  usedAt: Date | null;
+  usedBy: string | null;
+  isRevoked: boolean;
+}
+
+// User profile for dashboard
+export interface UserProfile {
+  id: string;
+  email: string;
+  name?: string;
+  role: UserRole;
+  createdAt: Date;
+}
+
+// Role permissions
+export const ROLE_PERMISSIONS = {
+  superadmin: {
+    canManageAdmins: true,
+    canManageCashiers: true,
+    canViewAnalytics: true,
+    canExportReports: true,
+    canManageMenu: true,
+    canProcessOrders: true,
+    canGenerateAdminCodes: true,
+    canGenerateCashierCodes: true,
+  },
+  admin: {
+    canManageAdmins: false,
+    canManageCashiers: true,
+    canViewAnalytics: true,
+    canExportReports: true,
+    canManageMenu: true,
+    canProcessOrders: true,
+    canGenerateAdminCodes: false,
+    canGenerateCashierCodes: true,
+  },
+  cashier: {
+    canManageAdmins: false,
+    canManageCashiers: false,
+    canViewAnalytics: false,
+    canExportReports: false,
+    canManageMenu: false,
+    canProcessOrders: true,
+    canGenerateAdminCodes: false,
+    canGenerateCashierCodes: false,
+  },
+} as const;
+
+export type RolePermissions = typeof ROLE_PERMISSIONS[keyof typeof ROLE_PERMISSIONS];
