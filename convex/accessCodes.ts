@@ -74,6 +74,7 @@ export const useCode = mutation({
 export const generateAccessCode = mutation({
   args: {
     role: v.union(v.literal("admin"), v.literal("cashier")),
+    shift: v.optional(v.union(v.literal("morning"), v.literal("evening"))),
     expiresInDays: v.optional(v.number()),
     maxUses: v.optional(v.number()),
   },
@@ -101,6 +102,7 @@ export const generateAccessCode = mutation({
     await ctx.db.insert("accessCodes", {
       code,
       role: args.role,
+      shift: args.shift,
       createdAt: Date.now(),
       expiresAt,
       usedCount: 0,
@@ -108,7 +110,7 @@ export const generateAccessCode = mutation({
       isActive: true,
     });
 
-    return { code, expiresAt, maxUses: args.maxUses };
+    return { code, shift: args.shift, expiresAt, maxUses: args.maxUses };
   },
 });
 

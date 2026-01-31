@@ -12,6 +12,8 @@ import type * as accessCodes from "../accessCodes.js";
 import type * as adminAuth from "../adminAuth.js";
 import type * as clearDemoCodes from "../clearDemoCodes.js";
 import type * as http from "../http.js";
+import type * as menuItems from "../menuItems.js";
+import type * as orders from "../orders.js";
 import type * as roles from "../roles.js";
 import type * as seedAccessCodes from "../seedAccessCodes.js";
 import type * as users from "../users.js";
@@ -27,6 +29,8 @@ declare const fullApi: ApiFromModules<{
   adminAuth: typeof adminAuth;
   clearDemoCodes: typeof clearDemoCodes;
   http: typeof http;
+  menuItems: typeof menuItems;
+  orders: typeof orders;
   roles: typeof roles;
   seedAccessCodes: typeof seedAccessCodes;
   users: typeof users;

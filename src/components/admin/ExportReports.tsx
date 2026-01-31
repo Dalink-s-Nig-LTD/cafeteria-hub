@@ -1,23 +1,35 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { 
+import React, { useState } from "react";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { FileText, Download, FileSpreadsheet, Calendar as CalendarIcon, TrendingUp } from 'lucide-react';
-import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
+} from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  FileText,
+  Download,
+  FileSpreadsheet,
+  Calendar as CalendarIcon,
+  TrendingUp,
+} from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
-type ReportType = 'sales' | 'orders' | 'inventory' | 'users';
-type ExportFormat = 'pdf' | 'csv' | 'excel';
+type ReportType = "sales" | "orders" | "inventory" | "users";
+type ExportFormat = "pdf" | "csv" | "excel";
 
 interface ReportOption {
   id: ReportType;
@@ -27,16 +39,40 @@ interface ReportOption {
 }
 
 const reportOptions: ReportOption[] = [
-  { id: 'sales', name: 'Sales Report', description: 'Revenue and transaction data', icon: <TrendingUp className="w-5 h-5" /> },
-  { id: 'orders', name: 'Orders Report', description: 'All orders with details', icon: <FileText className="w-5 h-5" /> },
-  { id: 'inventory', name: 'Inventory Report', description: 'Stock levels and menu items', icon: <FileSpreadsheet className="w-5 h-5" /> },
-  { id: 'users', name: 'Users Report', description: 'Staff and access logs', icon: <FileText className="w-5 h-5" /> },
+  {
+    id: "sales",
+    name: "Sales Report",
+    description: "Revenue and transaction data",
+    icon: <TrendingUp className="w-5 h-5" />,
+  },
+  {
+    id: "orders",
+    name: "Orders Report",
+    description: "All orders with details",
+    icon: <FileText className="w-5 h-5" />,
+  },
+  {
+    id: "inventory",
+    name: "Inventory Report",
+    description: "Stock levels and menu items",
+    icon: <FileSpreadsheet className="w-5 h-5" />,
+  },
+  {
+    id: "users",
+    name: "Users Report",
+    description: "Staff and access logs",
+    icon: <FileText className="w-5 h-5" />,
+  },
 ];
 
 export function ExportReports() {
-  const [selectedReport, setSelectedReport] = useState<ReportType>('sales');
-  const [exportFormat, setExportFormat] = useState<ExportFormat>('pdf');
-  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
+  const ordersStats = useQuery(api.orders.getOrdersStats);
+  const [selectedReport, setSelectedReport] = useState<ReportType>("sales");
+  const [exportFormat, setExportFormat] = useState<ExportFormat>("pdf");
+  const [dateRange, setDateRange] = useState<{
+    from: Date | undefined;
+    to: Date | undefined;
+  }>({
     from: undefined,
     to: undefined,
   });
@@ -45,15 +81,15 @@ export function ExportReports() {
 
   const handleExport = async () => {
     setIsExporting(true);
-    
+
     // Simulate export delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
     toast({
-      title: 'Report Generated',
+      title: "Report Generated",
       description: `Your ${selectedReport} report has been downloaded as ${exportFormat.toUpperCase()}`,
     });
-    
+
     setIsExporting(false);
   };
 
@@ -75,21 +111,28 @@ export function ExportReports() {
                 <Card
                   key={report.id}
                   className={cn(
-                    'p-4 cursor-pointer transition-all hover:border-primary/50',
-                    selectedReport === report.id && 'border-primary bg-primary/5'
+                    "p-4 cursor-pointer transition-all hover:border-primary/50",
+                    selectedReport === report.id &&
+                      "border-primary bg-primary/5",
                   )}
                   onClick={() => setSelectedReport(report.id)}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={cn(
-                      'p-2 rounded-lg',
-                      selectedReport === report.id ? 'bg-primary text-primary-foreground' : 'bg-secondary'
-                    )}>
+                    <div
+                      className={cn(
+                        "p-2 rounded-lg",
+                        selectedReport === report.id
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-secondary",
+                      )}
+                    >
                       {report.icon}
                     </div>
                     <div>
                       <p className="font-medium">{report.name}</p>
-                      <p className="text-sm text-muted-foreground">{report.description}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {report.description}
+                      </p>
                     </div>
                   </div>
                 </Card>
@@ -106,55 +149,61 @@ export function ExportReports() {
                   <Button
                     variant="outline"
                     className={cn(
-                      'justify-start text-left font-normal flex-1',
-                      !dateRange.from && 'text-muted-foreground'
+                      "justify-start text-left font-normal flex-1",
+                      !dateRange.from && "text-muted-foreground",
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateRange.from ? format(dateRange.from, 'PPP') : 'From date'}
+                    {dateRange.from
+                      ? format(dateRange.from, "PPP")
+                      : "From date"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
                     selected={dateRange.from}
-                    onSelect={(date) => setDateRange(prev => ({ ...prev, from: date }))}
+                    onSelect={(date) =>
+                      setDateRange((prev) => ({ ...prev, from: date }))
+                    }
                     initialFocus
                   />
                 </PopoverContent>
               </Popover>
-              
+
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     className={cn(
-                      'justify-start text-left font-normal flex-1',
-                      !dateRange.to && 'text-muted-foreground'
+                      "justify-start text-left font-normal flex-1",
+                      !dateRange.to && "text-muted-foreground",
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateRange.to ? format(dateRange.to, 'PPP') : 'To date'}
+                    {dateRange.to ? format(dateRange.to, "PPP") : "To date"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
                     selected={dateRange.to}
-                    onSelect={(date) => setDateRange(prev => ({ ...prev, to: date }))}
+                    onSelect={(date) =>
+                      setDateRange((prev) => ({ ...prev, to: date }))
+                    }
                     initialFocus
                   />
                 </PopoverContent>
               </Popover>
             </div>
-            
+
             {/* Quick Date Presets */}
             <div className="flex flex-wrap gap-2">
               {[
-                { label: 'Today', days: 0 },
-                { label: 'Last 7 days', days: 7 },
-                { label: 'Last 30 days', days: 30 },
-                { label: 'This month', days: -1 },
+                { label: "Today", days: 0 },
+                { label: "Last 7 days", days: 7 },
+                { label: "Last 30 days", days: 30 },
+                { label: "This month", days: -1 },
               ].map((preset) => (
                 <Badge
                   key={preset.label}
@@ -168,7 +217,9 @@ export function ExportReports() {
                     } else if (preset.days === 0) {
                       from = new Date();
                     } else {
-                      from = new Date(Date.now() - preset.days * 24 * 60 * 60 * 1000);
+                      from = new Date(
+                        Date.now() - preset.days * 24 * 60 * 60 * 1000,
+                      );
                     }
                     setDateRange({ from, to });
                   }}
@@ -182,7 +233,10 @@ export function ExportReports() {
           {/* Export Format */}
           <div className="space-y-3">
             <label className="text-sm font-medium">Export Format</label>
-            <Select value={exportFormat} onValueChange={(v) => setExportFormat(v as ExportFormat)}>
+            <Select
+              value={exportFormat}
+              onValueChange={(v) => setExportFormat(v as ExportFormat)}
+            >
               <SelectTrigger className="w-full sm:w-48">
                 <SelectValue />
               </SelectTrigger>
@@ -195,8 +249,8 @@ export function ExportReports() {
           </div>
 
           {/* Export Button */}
-          <Button 
-            onClick={handleExport} 
+          <Button
+            onClick={handleExport}
             disabled={isExporting}
             className="w-full sm:w-auto gap-2"
           >
@@ -223,17 +277,32 @@ export function ExportReports() {
         <CardContent>
           <div className="space-y-3">
             {[
-              { name: 'Sales Report - March 2024', format: 'PDF', date: 'Mar 15, 2024', size: '245 KB' },
-              { name: 'Orders Report - February 2024', format: 'CSV', date: 'Mar 1, 2024', size: '1.2 MB' },
-              { name: 'Inventory Report - Q1 2024', format: 'Excel', date: 'Feb 28, 2024', size: '890 KB' },
+              {
+                name: "Sales Report - March 2024",
+                format: "PDF",
+                date: "Mar 15, 2024",
+                size: "245 KB",
+              },
+              {
+                name: "Orders Report - February 2024",
+                format: "CSV",
+                date: "Mar 1, 2024",
+                size: "1.2 MB",
+              },
+              {
+                name: "Inventory Report - Q1 2024",
+                format: "Excel",
+                date: "Feb 28, 2024",
+                size: "890 KB",
+              },
             ].map((file, index) => (
-              <div 
+              <div
                 key={index}
                 className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="p-2 rounded bg-background">
-                    {file.format === 'PDF' ? (
+                    {file.format === "PDF" ? (
                       <FileText className="w-4 h-4 text-destructive" />
                     ) : (
                       <FileSpreadsheet className="w-4 h-4 text-success" />
@@ -241,7 +310,9 @@ export function ExportReports() {
                   </div>
                   <div className="min-w-0">
                     <p className="font-medium text-sm truncate">{file.name}</p>
-                    <p className="text-xs text-muted-foreground">{file.date} · {file.size}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {file.date} · {file.size}
+                    </p>
                   </div>
                 </div>
                 <Button variant="ghost" size="icon" className="shrink-0">

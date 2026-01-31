@@ -1,10 +1,11 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Clock, CreditCard, Banknote, Smartphone } from 'lucide-react';
-import { recentOrders } from '@/data/salesData';
-import { formatDistanceToNow } from 'date-fns';
+import React from "react";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Clock, CreditCard, Banknote, Smartphone } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 
 const paymentIcons = {
   cash: Banknote,
@@ -13,6 +14,45 @@ const paymentIcons = {
 };
 
 export function RecentOrders() {
+  const recentOrders = useQuery(api.orders.getRecentOrders, { limit: 5 });
+
+  if (!recentOrders) {
+    return (
+      <Card className="border-border shadow-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 font-display">
+            <Clock className="w-5 h-5 text-primary" />
+            Recent Orders
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[300px] flex items-center justify-center">
+            <div className="animate-pulse text-muted-foreground">
+              Loading...
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (recentOrders.length === 0) {
+    return (
+      <Card className="border-border shadow-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 font-display">
+            <Clock className="w-5 h-5 text-primary" />
+            Recent Orders
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[300px] flex items-center justify-center">
+            <div className="text-muted-foreground text-sm">No orders yet</div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
   return (
     <Card className="border-border shadow-card">
       <CardHeader>
@@ -26,17 +66,21 @@ export function RecentOrders() {
           <div className="space-y-4">
             {recentOrders.map((order) => {
               const PaymentIcon = paymentIcons[order.paymentMethod];
-              
+
               return (
                 <div
-                  key={order.id}
+                  key={order._id}
                   className="p-4 rounded-lg bg-secondary/50 border border-border"
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div>
-                      <p className="font-semibold text-sm">{order.id}</p>
+                      <p className="font-semibold text-sm">
+                        {order._id.slice(-8).toUpperCase()}
+                      </p>
                       <p className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(order.timestamp, { addSuffix: true })}
+                        {formatDistanceToNow(order.createdAt, {
+                          addSuffix: true,
+                        })}
                       </p>
                     </div>
                     <Badge
@@ -47,15 +91,18 @@ export function RecentOrders() {
                       {order.paymentMethod}
                     </Badge>
                   </div>
-                  
+
                   <div className="space-y-1 mb-3">
                     {order.items.map((item) => (
-                      <p key={item.id} className="text-xs text-muted-foreground">
+                      <p
+                        key={item.id}
+                        className="text-xs text-muted-foreground"
+                      >
                         {item.quantity}x {item.name}
                       </p>
                     ))}
                   </div>
-                  
+
                   <div className="flex items-center justify-between pt-2 border-t border-border">
                     <span className="text-xs text-muted-foreground">Total</span>
                     <span className="font-bold text-primary">

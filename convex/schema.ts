@@ -26,6 +26,7 @@ export default defineSchema({
   accessCodes: defineTable({
     code: v.string(),
     role: v.union(v.literal("admin"), v.literal("cashier")),
+    shift: v.optional(v.union(v.literal("morning"), v.literal("evening"))),
     createdAt: v.number(),
     expiresAt: v.optional(v.number()),
     usedCount: v.number(),
@@ -34,7 +35,8 @@ export default defineSchema({
   })
     .index("by_code", ["code"])
     .index("by_role", ["role"])
-    .index("by_isActive", ["isActive"]),
+    .index("by_isActive", ["isActive"])
+    .index("by_shift", ["shift"]),
   
   // Menu items stored in database
   menuItems: defineTable({

@@ -1,32 +1,32 @@
-import React, { useState } from 'react';
-import { DashboardHeader } from '@/components/layout/DashboardHeader';
-import { StatsCards } from '@/components/admin/StatsCards';
-import { SalesChart } from '@/components/admin/SalesChart';
-import { CategoryChart } from '@/components/admin/CategoryChart';
-import { MenuManagement } from '@/components/admin/MenuManagement';
-import { RecentOrders } from '@/components/admin/RecentOrders';
-import { UserManagement } from '@/components/admin/UserManagement';
-import { AccessCodeGenerator } from '@/components/admin/AccessCodeGenerator';
-import { ExportReports } from '@/components/admin/ExportReports';
-import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { 
-  LayoutDashboard, 
-  UtensilsCrossed, 
-  Users, 
-  Key, 
-  FileText, 
+import React, { useState } from "react";
+import { DashboardHeader } from "@/components/layout/DashboardHeader";
+import { StatsCards } from "@/components/admin/StatsCards";
+import { SalesChart } from "@/components/admin/SalesChart";
+import { CategoryChart } from "@/components/admin/CategoryChart";
+import { MenuManagement } from "@/components/admin/MenuManagement";
+import { RecentOrders } from "@/components/admin/RecentOrders";
+import { UserManagement } from "@/components/admin/UserManagement";
+import { AccessCodeGenerator } from "@/components/admin/AccessCodeGenerator";
+import { ExportReports } from "@/components/admin/ExportReports";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  LayoutDashboard,
+  UtensilsCrossed,
+  Users,
+  Key,
+  FileText,
   Menu,
-  Crown
-} from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { UserRole } from '@/types/cafeteria';
+  Crown,
+} from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { UserRole } from "@/types/cafeteria";
 
 interface AdminDashboardProps {
   onLogout: () => void;
 }
 
-type TabType = 'overview' | 'menu' | 'users' | 'codes' | 'reports';
+type TabType = "overview" | "menu" | "users" | "codes" | "reports";
 
 interface TabConfig {
   id: TabType;
@@ -36,23 +36,36 @@ interface TabConfig {
 }
 
 export function AdminDashboard({ onLogout }: AdminDashboardProps) {
-  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [activeTab, setActiveTab] = useState<TabType>("overview");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isMobile = useIsMobile();
-  
-  // For demo, assume superadmin role - in production this comes from auth context
-  const userRole: UserRole = 'superadmin';
-  const isSuperadmin = userRole === 'superadmin';
+
+  // TODO: Get actual user role from auth context
+  // For now, all admin users have full access
+  const isSuperadmin = true;
 
   const tabs: TabConfig[] = [
-    { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-4 h-4" /> },
-    { id: 'menu', label: 'Menu', icon: <UtensilsCrossed className="w-4 h-4" /> },
-    { id: 'users', label: 'Users', icon: <Users className="w-4 h-4" />, superadminOnly: true },
-    { id: 'codes', label: 'Access Codes', icon: <Key className="w-4 h-4" /> },
-    { id: 'reports', label: 'Reports', icon: <FileText className="w-4 h-4" /> },
+    {
+      id: "overview",
+      label: "Overview",
+      icon: <LayoutDashboard className="w-4 h-4" />,
+    },
+    {
+      id: "menu",
+      label: "Menu",
+      icon: <UtensilsCrossed className="w-4 h-4" />,
+    },
+    {
+      id: "users",
+      label: "Users",
+      icon: <Users className="w-4 h-4" />,
+      superadminOnly: true,
+    },
+    { id: "codes", label: "Access Codes", icon: <Key className="w-4 h-4" /> },
+    { id: "reports", label: "Reports", icon: <FileText className="w-4 h-4" /> },
   ];
 
-  const visibleTabs = tabs.filter(tab => !tab.superadminOnly || isSuperadmin);
+  const visibleTabs = tabs.filter((tab) => !tab.superadminOnly || isSuperadmin);
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
@@ -61,7 +74,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'overview':
+      case "overview":
         return (
           <div className="space-y-4 sm:space-y-6 animate-fade-in">
             <StatsCards />
@@ -72,25 +85,25 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
             <RecentOrders />
           </div>
         );
-      case 'menu':
+      case "menu":
         return (
           <div className="animate-fade-in">
             <MenuManagement />
           </div>
         );
-      case 'users':
+      case "users":
         return isSuperadmin ? (
           <div className="animate-fade-in">
             <UserManagement />
           </div>
         ) : null;
-      case 'codes':
+      case "codes":
         return (
           <div className="animate-fade-in">
             <AccessCodeGenerator isSuperadmin={isSuperadmin} />
           </div>
         );
-      case 'reports':
+      case "reports":
         return (
           <div className="animate-fade-in">
             <ExportReports />
@@ -106,7 +119,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
       {visibleTabs.map((tab) => (
         <Button
           key={tab.id}
-          variant={activeTab === tab.id ? 'default' : 'ghost'}
+          variant={activeTab === tab.id ? "default" : "ghost"}
           onClick={() => handleTabChange(tab.id)}
           className="justify-start gap-2"
         >
@@ -123,7 +136,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <DashboardHeader onLogout={onLogout} />
-      
+
       <main className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* Desktop Sidebar */}
         <aside className="hidden lg:block w-64 border-r border-border p-4 bg-card/50">
@@ -159,7 +172,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
             {visibleTabs.slice(0, 3).map((tab) => (
               <Button
                 key={tab.id}
-                variant={activeTab === tab.id ? 'default' : 'outline'}
+                variant={activeTab === tab.id ? "default" : "outline"}
                 size="sm"
                 onClick={() => handleTabChange(tab.id)}
                 className="gap-1.5 shrink-0"

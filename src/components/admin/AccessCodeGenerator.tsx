@@ -1,14 +1,17 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { 
+import React, { useState } from "react";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -16,8 +19,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { 
+} from "@/components/ui/table";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -26,100 +29,126 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Key, Copy, Plus, Ban, Check, Clock, AlertCircle } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-
-interface AccessCodeData {
-  id: string;
-  code: string;
-  role: 'admin' | 'cashier';
-  createdAt: Date;
-  expiresAt: Date | null;
-  usedAt: Date | null;
-  usedBy: string | null;
-  isRevoked: boolean;
-}
-
-// Mock data for demo
-const mockCodes: AccessCodeData[] = [
-  { id: '1', code: 'ABC123', role: 'cashier', createdAt: new Date('2024-03-01'), expiresAt: new Date('2024-04-01'), usedAt: null, usedBy: null, isRevoked: false },
-  { id: '2', code: 'XYZ789', role: 'cashier', createdAt: new Date('2024-02-15'), expiresAt: new Date('2024-03-15'), usedAt: new Date('2024-02-20'), usedBy: 'John Doe', isRevoked: false },
-  { id: '3', code: 'DEF456', role: 'admin', createdAt: new Date('2024-01-10'), expiresAt: null, usedAt: null, usedBy: null, isRevoked: true },
-];
+} from "@/components/ui/alert-dialog";
+import { Key, Copy, Plus, Ban, Check, Clock, AlertCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface AccessCodeGeneratorProps {
   isSuperadmin?: boolean;
 }
 
-export function AccessCodeGenerator({ isSuperadmin = false }: AccessCodeGeneratorProps) {
-  const [codes, setCodes] = useState<AccessCodeData[]>(mockCodes);
+export function AccessCodeGenerator({
+  isSuperadmin = false,
+}: AccessCodeGeneratorProps) {
+  const codes = useQuery(api.accessCodes.listAccessCodes) || [];
+  const generateCode = useMutation(api.accessCodes.generateAccessCode);
+  const deactivateCode = useMutation(api.accessCodes.deactivateCode);
+  const deleteCode = useMutation(api.accessCodes.deleteCode);
+
   const [showGenerate, setShowGenerate] = useState(false);
-  const [newCodeRole, setNewCodeRole] = useState<'admin' | 'cashier'>('cashier');
-  const [expiresInDays, setExpiresInDays] = useState<string>('7');
+  const [shift, setShift] = useState<"morning" | "evening">("morning");
+  const [expiresInDays, setExpiresInDays] = useState<string>("7");
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
 
-  const generateRandomCode = () => {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let code = '';
-    for (let i = 0; i < 6; i++) {
-      code += chars.charAt(Math.floor(Math.random() * chars.length));
+  const handleGenerateCode = async () => {
+    setIsGenerating(true);
+    try {
+      // Always generate cashier code (default behavior)
+      const code = await generateCode({
+        expiresInDays:
+          expiresInDays === "never" ? undefined : parseInt(expiresInDays),
+        role: "cashier",
+      });
+      setGeneratedCode(code);
+      toast({
+        title: "Success!",
+        description: "Access code generated successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to generate access code",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
     }
-    return code;
-  };
-
-  const handleGenerateCode = () => {
-    const code = generateRandomCode();
-    const expiresAt = expiresInDays === 'never' 
-      ? null 
-      : new Date(Date.now() + parseInt(expiresInDays) * 24 * 60 * 60 * 1000);
-
-    const newCode: AccessCodeData = {
-      id: Date.now().toString(),
-      code,
-      role: newCodeRole,
-      createdAt: new Date(),
-      expiresAt,
-      usedAt: null,
-      usedBy: null,
-      isRevoked: false,
-    };
-
-    setCodes([newCode, ...codes]);
-    setGeneratedCode(code);
   };
 
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
     toast({
-      title: 'Copied!',
-      description: 'Access code copied to clipboard',
+      title: "Copied!",
+      description: "Access code copied to clipboard",
     });
   };
 
-  const handleRevokeCode = (codeId: string) => {
-    setCodes(codes.map(c => c.id === codeId ? { ...c, isRevoked: true } : c));
-    toast({
-      title: 'Code Revoked',
-      description: 'The access code has been revoked',
-    });
+  const handleDeactivateCode = async (codeId: Id<"accessCodes">) => {
+    try {
+      await deactivateCode({ codeId });
+      toast({
+        title: "Code Deactivated",
+        description: "The access code has been deactivated",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to deactivate code",
+        variant: "destructive",
+      });
+    }
   };
 
-  const getStatusBadge = (code: AccessCodeData) => {
-    if (code.isRevoked) {
-      return <Badge variant="destructive" className="gap-1"><Ban className="w-3 h-3" /> Revoked</Badge>;
+  const handleDeleteCode = async (codeId: Id<"accessCodes">) => {
+    try {
+      await deleteCode({ codeId });
+      toast({
+        title: "Code Deleted",
+        description: "The access code has been deleted",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete code",
+        variant: "destructive",
+      });
     }
-    if (code.usedAt) {
-      return <Badge variant="secondary" className="gap-1"><Check className="w-3 h-3" /> Used</Badge>;
-    }
-    if (code.expiresAt && code.expiresAt < new Date()) {
-      return <Badge variant="outline" className="gap-1 text-muted-foreground"><Clock className="w-3 h-3" /> Expired</Badge>;
-    }
-    return <Badge variant="default" className="gap-1 bg-success"><Check className="w-3 h-3" /> Active</Badge>;
   };
 
-  const activeCodes = codes.filter(c => !c.isRevoked && !c.usedAt && (!c.expiresAt || c.expiresAt > new Date()));
+  const getStatusBadge = (code: any) => {
+    if (!code.isActive) {
+      return (
+        <Badge variant="destructive" className="gap-1">
+          <Ban className="w-3 h-3" /> Inactive
+        </Badge>
+      );
+    }
+    if (code.usageCount > 0) {
+      return (
+        <Badge variant="secondary" className="gap-1">
+          <Check className="w-3 h-3" /> Used ({code.usageCount})
+        </Badge>
+      );
+    }
+    if (code.expiresAt && code.expiresAt < Date.now()) {
+      return (
+        <Badge variant="outline" className="gap-1 text-muted-foreground">
+          <Clock className="w-3 h-3" /> Expired
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="default" className="gap-1 bg-success">
+        <Check className="w-3 h-3" /> Active
+      </Badge>
+    );
+  };
+
+  const activeCodes = codes.filter(
+    (c) => c.isActive && (!c.expiresAt || c.expiresAt > Date.now()),
+  );
 
   return (
     <div className="space-y-6">
@@ -131,15 +160,21 @@ export function AccessCodeGenerator({ isSuperadmin = false }: AccessCodeGenerato
         </Card>
         <Card className="p-4">
           <p className="text-sm text-muted-foreground">Active</p>
-          <p className="text-2xl font-bold text-success">{activeCodes.length}</p>
+          <p className="text-2xl font-bold text-success">
+            {activeCodes.length}
+          </p>
         </Card>
         <Card className="p-4">
           <p className="text-sm text-muted-foreground">Used</p>
-          <p className="text-2xl font-bold">{codes.filter(c => c.usedAt).length}</p>
+          <p className="text-2xl font-bold">
+            {codes.filter((c) => c.usageCount > 0).length}
+          </p>
         </Card>
         <Card className="p-4">
-          <p className="text-sm text-muted-foreground">Revoked</p>
-          <p className="text-2xl font-bold text-destructive">{codes.filter(c => c.isRevoked).length}</p>
+          <p className="text-sm text-muted-foreground">Inactive</p>
+          <p className="text-2xl font-bold text-destructive">
+            {codes.filter((c) => !c.isActive).length}
+          </p>
         </Card>
       </div>
 
@@ -150,7 +185,13 @@ export function AccessCodeGenerator({ isSuperadmin = false }: AccessCodeGenerato
               <Key className="w-5 h-5 text-primary" />
               Access Codes
             </CardTitle>
-            <Button onClick={() => { setShowGenerate(true); setGeneratedCode(null); }} className="gap-2 w-full sm:w-auto">
+            <Button
+              onClick={() => {
+                setShowGenerate(true);
+                setGeneratedCode(null);
+              }}
+              className="gap-2 w-full sm:w-auto"
+            >
               <Plus className="w-4 h-4" />
               Generate Code
             </Button>
@@ -163,24 +204,24 @@ export function AccessCodeGenerator({ isSuperadmin = false }: AccessCodeGenerato
               <TableHeader>
                 <TableRow>
                   <TableHead>Code</TableHead>
-                  <TableHead>Role</TableHead>
+                  <TableHead>Shift</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Expires</TableHead>
-                  <TableHead>Used By</TableHead>
+                  <TableHead>Usage</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {codes.map((code) => (
-                  <TableRow key={code.id}>
+                  <TableRow key={code._id}>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <code className="font-mono text-lg font-bold tracking-wider">
                           {code.code}
                         </code>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           className="h-8 w-8"
                           onClick={() => handleCopyCode(code.code)}
                         >
@@ -189,29 +230,34 @@ export function AccessCodeGenerator({ isSuperadmin = false }: AccessCodeGenerato
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={code.role === 'admin' ? 'secondary' : 'outline'}>
-                        {code.role}
+                      <Badge
+                        variant={
+                          code.shift === "morning" ? "default" : "secondary"
+                        }
+                      >
+                        {code.shift
+                          ? code.shift.charAt(0).toUpperCase() +
+                            code.shift.slice(1)
+                          : "Any"}
                       </Badge>
                     </TableCell>
                     <TableCell>{getStatusBadge(code)}</TableCell>
                     <TableCell>
-                      {code.expiresAt 
-                        ? code.expiresAt.toLocaleDateString() 
-                        : 'Never'}
+                      {code.expiresAt
+                        ? new Date(code.expiresAt).toLocaleDateString()
+                        : "Never"}
                     </TableCell>
-                    <TableCell>
-                      {code.usedBy || '-'}
-                    </TableCell>
+                    <TableCell>{code.usageCount} times</TableCell>
                     <TableCell className="text-right">
-                      {!code.isRevoked && !code.usedAt && (
-                        <Button 
-                          variant="ghost" 
+                      {code.isActive && (
+                        <Button
+                          variant="ghost"
                           size="sm"
                           className="text-destructive hover:text-destructive"
-                          onClick={() => handleRevokeCode(code.id)}
+                          onClick={() => handleDeactivateCode(code._id)}
                         >
                           <Ban className="w-4 h-4 mr-1" />
-                          Revoke
+                          Deactivate
                         </Button>
                       )}
                     </TableCell>
@@ -224,15 +270,15 @@ export function AccessCodeGenerator({ isSuperadmin = false }: AccessCodeGenerato
           {/* Mobile Card View */}
           <div className="md:hidden space-y-4">
             {codes.map((code) => (
-              <Card key={code.id} className="p-4">
+              <Card key={code._id} className="p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <code className="font-mono text-lg font-bold tracking-wider">
                       {code.code}
                     </code>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       className="h-8 w-8"
                       onClick={() => handleCopyCode(code.code)}
                     >
@@ -243,31 +289,40 @@ export function AccessCodeGenerator({ isSuperadmin = false }: AccessCodeGenerato
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
-                    <p className="text-muted-foreground">Role</p>
-                    <Badge variant={code.role === 'admin' ? 'secondary' : 'outline'}>
-                      {code.role}
+                    <p className="text-muted-foreground">Shift</p>
+                    <Badge
+                      variant={
+                        code.shift === "morning" ? "default" : "secondary"
+                      }
+                    >
+                      {code.shift
+                        ? code.shift.charAt(0).toUpperCase() +
+                          code.shift.slice(1)
+                        : "Any"}
                     </Badge>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Expires</p>
-                    <p>{code.expiresAt ? code.expiresAt.toLocaleDateString() : 'Never'}</p>
+                    <p>
+                      {code.expiresAt
+                        ? new Date(code.expiresAt).toLocaleDateString()
+                        : "Never"}
+                    </p>
                   </div>
-                  {code.usedBy && (
-                    <div className="col-span-2">
-                      <p className="text-muted-foreground">Used by</p>
-                      <p>{code.usedBy}</p>
-                    </div>
-                  )}
+                  <div className="col-span-2">
+                    <p className="text-muted-foreground">Usage</p>
+                    <p>{code.usageCount} times</p>
+                  </div>
                 </div>
-                {!code.isRevoked && !code.usedAt && (
-                  <Button 
-                    variant="outline" 
+                {code.isActive && (
+                  <Button
+                    variant="outline"
                     size="sm"
                     className="w-full mt-4 text-destructive"
-                    onClick={() => handleRevokeCode(code.id)}
+                    onClick={() => handleDeactivateCode(code._id)}
                   >
                     <Ban className="w-4 h-4 mr-1" />
-                    Revoke Code
+                    Deactivate Code
                   </Button>
                 )}
               </Card>
@@ -281,12 +336,12 @@ export function AccessCodeGenerator({ isSuperadmin = false }: AccessCodeGenerato
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {generatedCode ? 'Code Generated!' : 'Generate Access Code'}
+              {generatedCode ? "Code Generated!" : "Generate Access Code"}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {generatedCode 
-                ? 'Share this code with the user. They can use it to log in.'
-                : 'Create a new access code for a user to join the system.'}
+              {generatedCode
+                ? "Share this code with the user. They can use it to log in."
+                : "Create a new access code for a user to join the system."}
             </AlertDialogDescription>
           </AlertDialogHeader>
 
@@ -297,8 +352,11 @@ export function AccessCodeGenerator({ isSuperadmin = false }: AccessCodeGenerato
                   {generatedCode}
                 </code>
               </div>
-              <Button 
-                variant="outline" 
+              <p className="text-sm text-muted-foreground mb-4">
+                Share this 4-digit code with the cashier to log in
+              </p>
+              <Button
+                variant="outline"
                 onClick={() => handleCopyCode(generatedCode)}
                 className="gap-2"
               >
@@ -309,14 +367,17 @@ export function AccessCodeGenerator({ isSuperadmin = false }: AccessCodeGenerato
           ) : (
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Role</label>
-                <Select value={newCodeRole} onValueChange={(v) => setNewCodeRole(v as 'admin' | 'cashier')}>
+                <label className="text-sm font-medium">Shift</label>
+                <Select
+                  value={shift}
+                  onValueChange={(v) => setShift(v as "morning" | "evening")}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {isSuperadmin && <SelectItem value="admin">Admin</SelectItem>}
-                    <SelectItem value="cashier">Cashier</SelectItem>
+                    <SelectItem value="morning">Morning Shift</SelectItem>
+                    <SelectItem value="evening">Evening Shift</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -335,22 +396,22 @@ export function AccessCodeGenerator({ isSuperadmin = false }: AccessCodeGenerato
                   </SelectContent>
                 </Select>
               </div>
-              {!isSuperadmin && newCodeRole === 'admin' && (
-                <div className="flex items-center gap-2 p-3 bg-destructive/10 rounded-lg text-destructive text-sm">
-                  <AlertCircle className="w-4 h-4" />
-                  <span>Only superadmins can create admin codes</span>
-                </div>
-              )}
+              <p className="text-sm text-muted-foreground">
+                This will generate a 4-digit access code for cashiers to log in
+              </p>
             </div>
           )}
 
           <AlertDialogFooter>
-            <AlertDialogCancel>
-              {generatedCode ? 'Close' : 'Cancel'}
+            <AlertDialogCancel onClick={() => setGeneratedCode(null)}>
+              {generatedCode ? "Close" : "Cancel"}
             </AlertDialogCancel>
             {!generatedCode && (
-              <AlertDialogAction onClick={handleGenerateCode}>
-                Generate Code
+              <AlertDialogAction
+                onClick={handleGenerateCode}
+                disabled={isGenerating}
+              >
+                {isGenerating ? "Generating..." : "Generate Code"}
               </AlertDialogAction>
             )}
           </AlertDialogFooter>

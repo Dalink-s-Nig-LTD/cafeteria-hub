@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
+import React, { useState } from "react";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -11,110 +14,163 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { UtensilsCrossed, Plus, Search, Edit2, Trash2 } from 'lucide-react';
-import { menuItems as initialMenuItems, categories } from '@/data/menuItems';
-import { MenuItem } from '@/types/cafeteria';
-import { useToast } from '@/hooks/use-toast';
-import { EditItemDialog } from './EditItemDialog';
+} from "@/components/ui/select";
+import { UtensilsCrossed, Plus, Search, Edit2, Trash2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { EditItemDialog } from "./EditItemDialog";
 
 export function MenuManagement() {
-  const [items, setItems] = useState<MenuItem[]>(initialMenuItems);
-  const [searchQuery, setSearchQuery] = useState('');
+  const items = useQuery(api.menuItems.getAllMenuItems);
+  const categories = useQuery(api.menuItems.getCategories);
+  const addItem = useMutation(api.menuItems.addMenuItem);
+  const updateItem = useMutation(api.menuItems.updateMenuItem);
+  const toggleAvailabilityMutation = useMutation(
+    api.menuItems.toggleMenuItemAvailability,
+  );
+  const deleteItem = useMutation(api.menuItems.deleteMenuItem);
+  const [searchQuery, setSearchQuery] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const [editingItem, setEditingItem] = useState<any | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [newItem, setNewItem] = useState({
-    name: '',
-    price: '',
-    category: '',
+    name: "",
+    price: "",
+    category: "",
   });
   const { toast } = useToast();
 
-  const filteredItems = items.filter((item) =>
-    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.category.toLowerCase().includes(searchQuery.toLowerCase())
+  if (!items || !categories) {
+    return (
+      <Card className="border-border shadow-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 font-display">
+            <UtensilsCrossed className="w-5 h-5 text-primary" />
+            Menu Management
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center p-8">
+            <div className="animate-pulse text-muted-foreground">
+              Loading...
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const filteredItems = items.filter(
+    (item) =>
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.category.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  const toggleAvailability = (id: string) => {
-    setItems((current) =>
-      current.map((item) =>
-        item.id === id ? { ...item, available: !item.available } : item
-      )
-    );
-    toast({
-      title: 'Item Updated',
-      description: 'Availability status has been changed.',
-    });
+  const toggleAvailability = async (id: Id<"menuItems">) => {
+    try {
+      await toggleAvailabilityMutation({ id });
+      toast({
+        title: "Item Updated",
+        description: "Availability status has been changed.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update item",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleAddItem = () => {
+  const handleAddItem = async () => {
     if (!newItem.name || !newItem.price || !newItem.category) {
       toast({
-        title: 'Error',
-        description: 'Please fill in all fields.',
-        variant: 'destructive',
+        title: "Error",
+        description: "Please fill in all fields.",
+        variant: "destructive",
       });
       return;
     }
 
-    const item: MenuItem = {
-      id: Date.now().toString(),
-      name: newItem.name,
-      price: parseInt(newItem.price),
-      category: newItem.category,
-      available: true,
-    };
+    try {
+      await addItem({
+        name: newItem.name,
+        price: parseInt(newItem.price),
+        category: newItem.category,
+      });
 
-    setItems((current) => [...current, item]);
-    setNewItem({ name: '', price: '', category: '' });
-    setIsAddDialogOpen(false);
-    
-    toast({
-      title: 'Item Added',
-      description: `${item.name} has been added to the menu.`,
-    });
+      setNewItem({ name: "", price: "", category: "" });
+      setIsAddDialogOpen(false);
+
+      toast({
+        title: "Item Added",
+        description: `${newItem.name} has been added to the menu.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add item",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleEditItem = (item: MenuItem) => {
+  const handleEditItem = (item: any) => {
     setEditingItem(item);
     setIsEditDialogOpen(true);
   };
 
-  const handleSaveEdit = (updatedItem: MenuItem) => {
-    setItems((current) =>
-      current.map((item) =>
-        item.id === updatedItem.id ? updatedItem : item
-      )
-    );
-    toast({
-      title: 'Item Updated',
-      description: `${updatedItem.name} has been updated.`,
-    });
+  const handleSaveEdit = async (updatedItem: any) => {
+    try {
+      await updateItem({
+        id: updatedItem._id,
+        name: updatedItem.name,
+        price: updatedItem.price,
+        category: updatedItem.category,
+        available: updatedItem.available,
+      });
+
+      toast({
+        title: "Item Updated",
+        description: `${updatedItem.name} has been updated.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update item",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleDeleteItem = (id: string) => {
-    const item = items.find((i) => i.id === id);
-    setItems((current) => current.filter((item) => item.id !== id));
-    toast({
-      title: 'Item Deleted',
-      description: `${item?.name} has been removed from the menu.`,
-    });
+  const handleDeleteItem = async (id: Id<"menuItems">, name: string) => {
+    try {
+      await deleteItem({ id });
+      toast({
+        title: "Item Deleted",
+        description: `${name} has been removed from the menu.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete item",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -126,7 +182,7 @@ export function MenuManagement() {
               <UtensilsCrossed className="w-5 h-5 text-primary" />
               Menu Management
             </CardTitle>
-            
+
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
                 <Button size="sm">
@@ -144,7 +200,9 @@ export function MenuManagement() {
                     <Input
                       placeholder="e.g., Jollof Rice"
                       value={newItem.name}
-                      onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                      onChange={(e) =>
+                        setNewItem({ ...newItem, name: e.target.value })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
@@ -153,24 +211,30 @@ export function MenuManagement() {
                       type="number"
                       placeholder="e.g., 800"
                       value={newItem.price}
-                      onChange={(e) => setNewItem({ ...newItem, price: e.target.value })}
+                      onChange={(e) =>
+                        setNewItem({ ...newItem, price: e.target.value })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>Category</Label>
                     <Select
                       value={newItem.category}
-                      onValueChange={(value) => setNewItem({ ...newItem, category: value })}
+                      onValueChange={(value) =>
+                        setNewItem({ ...newItem, category: value })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
                       <SelectContent>
-                        {categories.filter(c => c !== 'All').map((category) => (
-                          <SelectItem key={category} value={category}>
-                            {category}
-                          </SelectItem>
-                        ))}
+                        {categories
+                          .filter((c) => c !== "All")
+                          .map((category) => (
+                            <SelectItem key={category} value={category}>
+                              {category}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -206,7 +270,7 @@ export function MenuManagement() {
               </TableHeader>
               <TableBody>
                 {filteredItems.map((item) => (
-                  <TableRow key={item.id}>
+                  <TableRow key={item._id}>
                     <TableCell className="font-medium">{item.name}</TableCell>
                     <TableCell>
                       <Badge variant="secondary" className="font-normal">
@@ -219,23 +283,23 @@ export function MenuManagement() {
                     <TableCell className="text-center">
                       <Switch
                         checked={item.available}
-                        onCheckedChange={() => toggleAvailability(item.id)}
+                        onCheckedChange={() => toggleAvailability(item._id)}
                       />
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="icon"
                           onClick={() => handleEditItem(item)}
                         >
                           <Edit2 className="w-4 h-4" />
                         </Button>
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="icon"
                           className="text-destructive hover:text-destructive"
-                          onClick={() => handleDeleteItem(item.id)}
+                          onClick={() => handleDeleteItem(item._id, item.name)}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
