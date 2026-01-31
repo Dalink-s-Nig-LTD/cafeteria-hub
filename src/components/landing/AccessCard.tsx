@@ -23,27 +23,33 @@ export function AccessCard({ type, onSuccess }: AccessCardProps) {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate a brief delay for UX
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    try {
+      const result = await login(code);
 
-    const success = login(code, type);
-
-    if (success) {
+      if (result.success) {
+        toast({
+          title: "Access Granted",
+          description: `Welcome to the ${isCashier ? "Cashier" : "Admin"} Dashboard`,
+        });
+        onSuccess();
+      } else {
+        toast({
+          title: "Access Denied",
+          description: result.error || "Invalid access code. Please try again.",
+          variant: "destructive",
+        });
+        setCode("");
+      }
+    } catch (error) {
       toast({
-        title: "Access Granted",
-        description: `Welcome to the ${isCashier ? "Cashier" : "Admin"} Dashboard`,
-      });
-      onSuccess();
-    } else {
-      toast({
-        title: "Access Denied",
-        description: "Invalid access code. Please try again.",
+        title: "Error",
+        description: "Something went wrong. Please try again.",
         variant: "destructive",
       });
       setCode("");
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   return (

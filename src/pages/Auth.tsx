@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuthActions } from "@convex-dev/auth/react";
+import { useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, EyeOff } from "lucide-react";
 import ruLogo from "@/assets/ru-logo.jpg";
 
@@ -17,14 +17,15 @@ export function Auth() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { signIn } = useAuthActions();
+
+  const signInMutation = useMutation(api.adminAuth.signIn);
+  const signUpMutation = useMutation(api.adminAuth.signUp);
 
   // Form states
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [name, setName] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,20 +41,26 @@ export function Auth() {
           throw new Error("Password must be at least 8 characters");
         }
 
-        // Sign up with Convex
-        await signIn("password", {
+        const result = await signUpMutation({
           email,
           password,
           name,
-          flow: "signUp",
         });
+
+        // Store session info
+        localStorage.setItem("sessionId", result.sessionId);
+        localStorage.setItem("userRole", "admin");
+        localStorage.setItem("userName", result.user.name);
       } else {
-        // Sign in with Convex
-        await signIn("password", {
+        const result = await signInMutation({
           email,
           password,
-          flow: "signIn",
         });
+
+        // Store session info
+        localStorage.setItem("sessionId", result.sessionId);
+        localStorage.setItem("userRole", "admin");
+        localStorage.setItem("userName", result.user.name);
       }
 
       navigate("/");
@@ -179,25 +186,6 @@ export function Auth() {
                     className="h-12 bg-[#f5f5f7] border-0 rounded-lg focus-visible:ring-1 focus-visible:ring-primary"
                     required
                   />
-                </div>
-              )}
-
-              {mode === "signin" && (
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="remember"
-                    checked={rememberMe}
-                    onCheckedChange={(checked) =>
-                      setRememberMe(checked as boolean)
-                    }
-                    className="border-muted-foreground/40 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                  />
-                  <Label
-                    htmlFor="remember"
-                    className="text-sm text-muted-foreground cursor-pointer font-normal"
-                  >
-                    Remember me
-                  </Label>
                 </div>
               )}
 

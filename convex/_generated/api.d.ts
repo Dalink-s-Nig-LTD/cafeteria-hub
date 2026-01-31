@@ -9,9 +9,11 @@
  */
 
 import type * as accessCodes from "../accessCodes.js";
-import type * as auth from "../auth.js";
+import type * as adminAuth from "../adminAuth.js";
+import type * as clearDemoCodes from "../clearDemoCodes.js";
 import type * as http from "../http.js";
 import type * as roles from "../roles.js";
+import type * as seedAccessCodes from "../seedAccessCodes.js";
 import type * as users from "../users.js";
 
 import type {
@@ -22,9 +24,11 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   accessCodes: typeof accessCodes;
-  auth: typeof auth;
+  adminAuth: typeof adminAuth;
+  clearDemoCodes: typeof clearDemoCodes;
   http: typeof http;
   roles: typeof roles;
+  seedAccessCodes: typeof seedAccessCodes;
   users: typeof users;
 }>;
 

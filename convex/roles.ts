@@ -1,6 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { auth } from "./auth";
+// Roles system - not currently used with simple access code auth
 
 // Get current user's role
 export const getCurrentRole = query({

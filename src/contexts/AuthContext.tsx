@@ -1,56 +1,109 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { useConvexAuth } from "convex/react";
-import { useAuthActions } from "@convex-dev/auth/react";
-import { UserRole } from '@/types/cafeteria';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
+import { useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
+import { UserRole } from "@/types/cafeteria";
+import type { Id } from "../../convex/_generated/dataModel";
 
 interface AuthContextType {
   role: UserRole;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (code: string, role: 'cashier' | 'admin') => boolean;
-  logout: () => Promise<void>;
+  code: string | null;
+  userName: string | null;
+  login: (code: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Simple PIN codes for demo/fallback mode
-const ACCESS_CODES = {
-  cashier: '1234',
-  admin: '0000',
-};
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { isLoading, isAuthenticated } = useConvexAuth();
-  const { signOut } = useAuthActions();
-  const [localRole, setLocalRole] = useState<UserRole>(null);
+  const [role, setRole] = useState<UserRole>(null);
+  const [code, setCode] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
+  const useCodeMutation = useMutation(api.accessCodes.useCode);
+  const signOutMutation = useMutation(api.adminAuth.signOut);
 
-  // Legacy PIN-based login for demo mode
-  const login = (code: string, targetRole: 'cashier' | 'admin'): boolean => {
-    if (code === ACCESS_CODES[targetRole]) {
-      setLocalRole(targetRole);
-      return true;
+  // Check for existing session on mount
+  useEffect(() => {
+    const sessionId = localStorage.getItem("sessionId");
+    const storedRole = localStorage.getItem("userRole");
+    const storedName = localStorage.getItem("userName");
+
+    if (sessionId && storedRole) {
+      setRole(storedRole as UserRole);
+      setUserName(storedName);
+      if (storedRole === "cashier") {
+        setCode(localStorage.getItem("cashierCode"));
+      }
     }
-    return false;
+  }, []);
+
+  const login = async (
+    inputCode: string,
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      // Validate the code via Convex
+      const result = await useCodeMutation({ code: inputCode });
+
+      if (result) {
+        setRole(result.role);
+        setCode(inputCode);
+        localStorage.setItem("userRole", result.role);
+        localStorage.setItem("cashierCode", inputCode);
+        return { success: true };
+      }
+
+      return { success: false, error: "Invalid access code" };
+    } catch (error) {
+      console.error("Login error:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Login failed",
+      };
+    }
   };
 
   const logout = async () => {
-    setLocalRole(null);
-    if (isAuthenticated) {
-      await signOut();
+    const sessionId = localStorage.getItem("sessionId");
+
+    if (sessionId && role === "admin") {
+      try {
+        await signOutMutation({ sessionId: sessionId as Id<"sessions"> });
+      } catch (error) {
+        console.error("Logout error:", error);
+      }
     }
+
+    setRole(null);
+    setCode(null);
+    setUserName(null);
+    localStorage.removeItem("sessionId");
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("cashierCode");
+    localStorage.removeItem("userName");
   };
 
-  // Use local role for now, can be enhanced with Convex queries later
-  const role = localRole;
+  const isAuthenticated = role !== null;
+  const isLoading = false;
 
   return (
-    <AuthContext.Provider value={{ 
-      role, 
-      isLoading, 
-      isAuthenticated,
-      login, 
-      logout,
-    }}>
+    <AuthContext.Provider
+      value={{
+        role,
+        isLoading,
+        isAuthenticated,
+        code,
+        userName,
+        login,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -59,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

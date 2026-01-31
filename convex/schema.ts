@@ -1,34 +1,40 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-import { authTables } from "@convex-dev/auth/server";
 
 export default defineSchema({
-  ...authTables,
-  
-  // User roles table - stores role assignments
-  userRoles: defineTable({
-    userId: v.id("users"),
-    role: v.union(v.literal("superadmin"), v.literal("admin"), v.literal("cashier")),
+  // Admin users table
+  adminUsers: defineTable({
+    email: v.string(),
+    passwordHash: v.string(),
+    name: v.string(),
     createdAt: v.number(),
-    createdBy: v.optional(v.id("users")),
   })
-    .index("by_userId", ["userId"])
-    .index("by_role", ["role"]),
+    .index("by_email", ["email"]),
+
+  // Sessions table - stores active sessions
+  sessions: defineTable({
+    userId: v.optional(v.id("adminUsers")),
+    code: v.optional(v.string()),
+    role: v.union(v.literal("admin"), v.literal("cashier")),
+    createdAt: v.number(),
+    expiresAt: v.number(),
+  })
+    .index("by_code", ["code"])
+    .index("by_userId", ["userId"]),
   
   // Access codes for cashier login
   accessCodes: defineTable({
     code: v.string(),
     role: v.union(v.literal("admin"), v.literal("cashier")),
-    createdBy: v.id("users"),
     createdAt: v.number(),
     expiresAt: v.optional(v.number()),
-    usedAt: v.optional(v.number()),
-    usedBy: v.optional(v.id("users")),
-    isRevoked: v.boolean(),
+    usedCount: v.number(),
+    maxUses: v.optional(v.number()),
+    isActive: v.boolean(),
   })
     .index("by_code", ["code"])
-    .index("by_createdBy", ["createdBy"])
-    .index("by_role", ["role"]),
+    .index("by_role", ["role"])
+    .index("by_isActive", ["isActive"]),
   
   // Menu items stored in database
   menuItems: defineTable({
@@ -54,10 +60,10 @@ export default defineSchema({
     total: v.number(),
     paymentMethod: v.union(v.literal("cash"), v.literal("card"), v.literal("transfer")),
     status: v.union(v.literal("pending"), v.literal("completed"), v.literal("cancelled")),
-    cashierId: v.id("users"),
+    cashierCode: v.string(),
     createdAt: v.number(),
   })
     .index("by_status", ["status"])
-    .index("by_cashier", ["cashierId"])
+    .index("by_cashierCode", ["cashierCode"])
     .index("by_createdAt", ["createdAt"]),
 });
