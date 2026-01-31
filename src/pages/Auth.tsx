@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuthActions } from "@convex-dev/auth/react";
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +17,7 @@ export function Auth() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { signIn } = useAuthActions();
 
   // Form states
   const [email, setEmail] = useState('');
@@ -37,17 +39,28 @@ export function Auth() {
         if (password.length < 8) {
           throw new Error('Password must be at least 8 characters');
         }
-        console.log('Signup:', { email, password, name });
+        
+        // Sign up with Convex
+        await signIn("password", { 
+          email, 
+          password, 
+          name,
+          flow: "signUp" 
+        });
       } else {
-        console.log('Signin:', { email, password, rememberMe });
+        // Sign in with Convex
+        await signIn("password", { 
+          email, 
+          password,
+          flow: "signIn" 
+        });
       }
       
-      setTimeout(() => {
-        navigate('/');
-        setLoading(false);
-      }, 1000);
+      navigate('/');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error('Auth error:', err);
+      setError(err instanceof Error ? err.message : 'Authentication failed. Please try again.');
+    } finally {
       setLoading(false);
     }
   };

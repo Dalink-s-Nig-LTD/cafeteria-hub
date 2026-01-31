@@ -3,7 +3,7 @@ import { ConvexReactClient } from "convex/react";
 const convexUrl = import.meta.env.VITE_CONVEX_URL;
 
 if (!convexUrl) {
-  console.warn("VITE_CONVEX_URL is not set. Convex functionality will be disabled.");
+  throw new Error("VITE_CONVEX_URL is not set. Please add your Convex deployment URL.");
 }
 
-export const convex = convexUrl ? new ConvexReactClient(convexUrl) : null;
+export const convex = new ConvexReactClient(convexUrl);
