@@ -33,37 +33,21 @@ import {
 import { UserPlus, Shield, Trash2, Mail, Search } from "lucide-react";
 import { UserRole, UserProfile } from "@/types/cafeteria";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery } from "@tanstack/react-query";
-// Import your api object (adjust the path as needed)
-// import { api } from "../../lib/api";
+import { useQuery } from "convex/react";
 import { api } from "@/lib/convexApi";
 
 export function UserManagement() {
   const { toast } = useToast();
-  interface RawAdminUser {
-    _id?: string;
-    email?: string;
-    name?: string;
-    createdAt?: string | number | Date;
-  }
-
   // Fetch all admin users
-  const { data: rawUsers } = useQuery<RawAdminUser[]>({
-    queryKey: ["adminUsers"],
-    queryFn: api.adminUsers.getAll,
-  });
-  const users = rawUsers
-    ?.filter(
-      (u: RawAdminUser) =>
-        typeof u.email === "string" && typeof u.name === "string",
-    )
-    .map((u: RawAdminUser) => ({
+  const rawUsers = useQuery(api.adminuser.getAll);
+  const users =
+    rawUsers?.map((u) => ({
       id: u._id,
-      email: u.email as string,
-      name: u.name as string,
+      email: u.email,
+      name: u.name,
       role: "admin",
-      createdAt: u.createdAt,
-    })) as UserProfile[] | undefined;
+      createdAt: new Date(u.createdAt),
+    })) ?? undefined;
 
   return (
     <Card className="border-border shadow-card">
