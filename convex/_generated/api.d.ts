@@ -10,6 +10,8 @@
 
 import type * as accessCodes from "../accessCodes.js";
 import type * as adminAuth from "../adminAuth.js";
+import type * as adminuser from "../adminuser.js";
+import type * as auth from "../auth.js";
 import type * as clearDemoCodes from "../clearDemoCodes.js";
 import type * as http from "../http.js";
 import type * as menuItems from "../menuItems.js";
@@ -27,6 +29,8 @@ import type {
 declare const fullApi: ApiFromModules<{
   accessCodes: typeof accessCodes;
   adminAuth: typeof adminAuth;
+  adminuser: typeof adminuser;
+  auth: typeof auth;
   clearDemoCodes: typeof clearDemoCodes;
   http: typeof http;
   menuItems: typeof menuItems;

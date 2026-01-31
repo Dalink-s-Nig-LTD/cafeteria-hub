@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { 
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -18,8 +18,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { 
+} from "@/components/ui/table";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -29,13 +29,41 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { UserPlus, Shield, Trash2, Mail, Search } from 'lucide-react';
-import { UserRole } from '@/types/cafeteria';
-import { useToast } from '@/hooks/use-toast';
+} from "@/components/ui/alert-dialog";
+import { UserPlus, Shield, Trash2, Mail, Search } from "lucide-react";
+import { UserRole, UserProfile } from "@/types/cafeteria";
+import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
+// Import your api object (adjust the path as needed)
+// import { api } from "../../lib/api";
+import { api } from "@/lib/convexApi";
 
 export function UserManagement() {
   const { toast } = useToast();
+  interface RawAdminUser {
+    _id?: string;
+    email?: string;
+    name?: string;
+    createdAt?: string | number | Date;
+  }
+
+  // Fetch all admin users
+  const { data: rawUsers } = useQuery<RawAdminUser[]>({
+    queryKey: ["adminUsers"],
+    queryFn: api.adminUsers.getAll,
+  });
+  const users = rawUsers
+    ?.filter(
+      (u: RawAdminUser) =>
+        typeof u.email === "string" && typeof u.name === "string",
+    )
+    .map((u: RawAdminUser) => ({
+      id: u._id,
+      email: u.email as string,
+      name: u.name as string,
+      role: "admin",
+      createdAt: u.createdAt,
+    })) as UserProfile[] | undefined;
 
   return (
     <Card className="border-border shadow-card">
@@ -46,16 +74,55 @@ export function UserManagement() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-col items-center justify-center p-12 text-center">
-          <Shield className="w-16 h-16 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Access Code System</h3>
-          <p className="text-muted-foreground max-w-md">
-            This system uses access codes for cashier authentication. 
-            Go to the <strong>Access Codes</strong> tab to generate codes for cashiers. 
-            Admins can sign up directly on the login page.
-          </p>
-        </div>
+        {users === undefined ? (
+          <div className="p-8 text-center text-muted-foreground">
+            Loading users...
+          </div>
+        ) : users.length === 0 ? (
+          <div className="p-8 text-center text-muted-foreground">
+            No users found.
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Created</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {users.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell>
+                    {user.name || (
+                      <span className="italic text-muted-foreground">
+                        (No name)
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={
+                        user.role === "superadmin" ? "destructive" : "default"
+                      }
+                    >
+                      {user.role || "N/A"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {user.createdAt
+                      ? new Date(user.createdAt).toLocaleDateString()
+                      : "-"}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </CardContent>
     </Card>
-    );
-  }
+  );
+}

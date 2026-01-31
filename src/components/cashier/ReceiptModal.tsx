@@ -6,6 +6,7 @@ function formatOrderId(id: string) {
   const short = clean.slice(-6);
   return `New Era- ${short.padStart(7, "0")}`;
 }
+
 import {
   Dialog,
   DialogContent,
@@ -18,29 +19,31 @@ import { Printer, X, CheckCircle } from "lucide-react";
 import { Order } from "@/types/cafeteria";
 import { format } from "date-fns";
 
+// Helper to categorize items into food and drinks
+function categorizeItems(
+  items: { name: string; price: number; quantity: number; category?: string }[],
+) {
+  const food: typeof items = [];
+  const drinks: typeof items = [];
+  items.forEach((item) => {
+    // You can adjust the logic below based on your actual item structure
+    if (
+      item.category?.toLowerCase() === "drink" ||
+      item.category?.toLowerCase() === "drinks"
+    ) {
+      drinks.push(item);
+    } else {
+      food.push(item);
+    }
+  });
+  return { food, drinks };
+}
+
 interface ReceiptModalProps {
   order: Order | null;
   isOpen: boolean;
   onClose: () => void;
 }
-
-// Categorize items as food or drinks
-const categorizeItems = (items: Order["items"]) => {
-  const drinkCategories = ["drinks", "beverages", "juice", "water", "soda"];
-
-  const food = items.filter(
-    (item) =>
-      !drinkCategories.some((cat) =>
-        item.category?.toLowerCase().includes(cat),
-      ),
-  );
-
-  const drinks = items.filter((item) =>
-    drinkCategories.some((cat) => item.category?.toLowerCase().includes(cat)),
-  );
-
-  return { food, drinks };
-};
 
 // POS Receipt Component
 const POSReceipt = ({
@@ -56,71 +59,41 @@ const POSReceipt = ({
     (sum, item) => sum + item.price * item.quantity,
     0,
   );
-
   if (items.length === 0) return null;
 
   return (
     <div
-      className="pos-receipt bg-white p-2 font-mono text-xs relative"
-      style={{ width: "58mm", maxWidth: "58mm" }}
+      className="pos-receipt bg-white font-mono text-[11px] relative"
+      style={{ width: "58mm", maxWidth: "58mm", margin: 0, padding: 0 }}
     >
-      {/* Watermark Logo */}
-      <div
-        className="absolute inset-0 flex items-center justify-center z-0"
-        style={{ opacity: 0.35 }}
-      >
+      {/* Single Watermark Logo (background) */}
+      <div className="absolute inset-0 z-0" style={{ opacity: 0.13 }}>
         <img
           src="/logo.png"
           alt="Watermark"
           style={{
-            width: "70%",
-            height: "70%",
-            objectFit: "contain",
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
             filter: "none",
-          }}
-        />
-      </div>
-      <div
-        className="pos-receipt bg-white p-2 font-mono text-xs relative overflow-visible"
-        style={{
-          width: "58mm",
-          maxWidth: "58mm",
-          minHeight: "auto",
-          height: "auto",
-          boxSizing: "border-box",
-        }}
-      >
-        {/* Watermark Logo */}
-        <div
-          style={{
             position: "absolute",
             top: 0,
             left: 0,
-            width: "100%",
-            height: "auto",
-            zIndex: 0,
-            opacity: 0.25,
-            pointerEvents: "none",
           }}
-        >
-          <img
-            src="/logo.png"
-            alt="Watermark"
-            style={{
-              width: "40mm",
-              height: "auto",
-              objectFit: "contain",
-              margin: "8mm 0 0 4mm",
-              display: "block",
-            }}
-          />
-        </div>
+        />
       </div>
 
-      <div className="border-t border-dashed border-gray-400 my-2 relative z-10"></div>
+      {/* Header: Name and Location */}
+      <div className="text-center font-extrabold text-[14px] mb-1 relative z-10 leading-tight tracking-wide">
+        <div>Redeemer's University</div>
+        <div className="text-[12px]">New Era Cafeteria</div>
+        <div className="font-normal text-[10px]">Main Campus, Ede</div>
+      </div>
+
+      <div className="border-t border-black border-dashed my-1 relative z-10"></div>
 
       {/* Order Details */}
-      <div className="mb-2 text-[10px] relative z-10">
+      <div className="mb-1 text-[10px] relative z-10">
         <div className="flex justify-between">
           <span>Order ID:</span>
           <span className="font-semibold">{formatOrderId(order.id)}</span>
@@ -135,36 +108,36 @@ const POSReceipt = ({
         </div>
       </div>
 
-      <div className="border-t border-dashed border-gray-400 my-2 relative z-10"></div>
+      <div className="border-t border-black border-dashed my-1 relative z-10"></div>
 
       {/* Items */}
-      <div className="mb-2 relative z-10">
+      <div className="mb-1 relative z-10">
         {items.map((item, idx) => (
-          <div key={idx} className="flex justify-between mb-1">
+          <div key={idx} className="flex justify-between mb-0.5 text-[11px]">
             <span className="flex-1">
               {item.quantity}x {item.name}
             </span>
-            <span className="ml-2 text-right">
+            <span className="ml-2 text-right font-medium">
               ₦{(item.price * item.quantity).toLocaleString()}
             </span>
           </div>
         ))}
       </div>
 
-      <div className="border-t border-dashed border-gray-400 my-2 relative z-10"></div>
+      <div className="border-t border-black border-dashed my-1 relative z-10"></div>
 
       {/* Total */}
-      <div className="flex justify-between font-bold text-sm mb-3 relative z-10">
+      <div className="flex justify-between font-extrabold text-[13px] mb-2 relative z-10">
         <span>TOTAL</span>
         <span>₦{total.toLocaleString()}</span>
       </div>
 
-      <div className="border-t border-dashed border-gray-400 my-2 relative z-10"></div>
+      <div className="border-t border-black border-dashed my-1 relative z-10"></div>
 
       {/* Footer */}
-      <div className="text-center text-[10px] relative z-10">
-        <p>Thank you for your patronage!</p>
-        <p className="mt-1">Please come again 🙏</p>
+      <div className="text-center text-[10px] relative z-10 mt-1">
+        <p className="font-semibold">Thank you for your patronage!</p>
+        <p className="mt-0.5">Please come again 🙏</p>
       </div>
     </div>
   );

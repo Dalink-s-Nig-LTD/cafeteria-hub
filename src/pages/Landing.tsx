@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { UserPlus } from "lucide-react";
 import ruLogo from "@/assets/ru-logo.jpg";
+import watermark from "@/assets/watermark.png";
 
 interface LandingProps {
   onLogin: () => void;
@@ -16,8 +17,8 @@ export function Landing({ onLogin }: LandingProps) {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-background to-background" />
+      {/* Background Pattern Overlay */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-background to-background z-0" />
 
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-4 sm:p-8">
         {/* Logo & Title */}

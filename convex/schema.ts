@@ -51,6 +51,21 @@ export default defineSchema({
     .index("by_category", ["category"])
     .index("by_available", ["available"]),
   
+
+  // User roles table (for admin/cashier/superadmin roles)
+  userRoles: defineTable({
+    userId: v.id("users"),
+    role: v.union(
+      v.literal("superadmin"),
+      v.literal("admin"),
+      v.literal("cashier")
+    ),
+    createdAt: v.number(),
+    createdBy: v.optional(v.id("users")),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_role", ["role"]),
+
   // Orders table
   orders: defineTable({
     items: v.array(v.object({

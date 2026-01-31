@@ -52,21 +52,28 @@ export const useCode = mutation({
       .withIndex("by_code", (q) => q.eq("code", args.code))
       .first();
 
-    if (accessCode) {
-      await ctx.db.patch(accessCode._id, {
-        usedCount: accessCode.usedCount + 1,
-      });
+    if (!accessCode) {
+      return {
+        error: "Invalid code, please contact admin.",
+        sessionId: null,
+        code: args.code,
+        role: null
+      };
     }
+
+    await ctx.db.patch(accessCode._id, {
+      usedCount: accessCode.usedCount + 1,
+    });
 
     // Create session (expires in 8 hours)
     const sessionId = await ctx.db.insert("sessions", {
       code: args.code,
-      role: accessCode!.role,
+      role: accessCode.role,
       createdAt: Date.now(),
       expiresAt: Date.now() + 8 * 60 * 60 * 1000,
     });
 
-    return { sessionId, code: args.code, role: accessCode!.role };
+    return { sessionId, code: args.code, role: accessCode.role };
   },
 });
 

@@ -66,11 +66,19 @@ export function Auth() {
       navigate("/");
     } catch (err) {
       console.error("Auth error:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Authentication failed. Please try again.",
-      );
+      let msg = "Authentication failed. Please try again.";
+      if (err instanceof Error) {
+        // Always show the same message for wrong credentials
+        if (
+          err.message.toLowerCase().includes("wrong password") ||
+          err.message.toLowerCase().includes("wrong password or email")
+        ) {
+          msg = "Wrong password or email";
+        } else {
+          msg = err.message;
+        }
+      }
+      setError(msg);
     } finally {
       setLoading(false);
     }

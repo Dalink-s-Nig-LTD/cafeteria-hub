@@ -73,13 +73,13 @@ export const signIn = mutation({
       .first();
 
     if (!user) {
-      throw new Error("Invalid email or password");
+      throw new Error("Wrong password or email");
     }
 
     // Verify password
     const passwordHash = hashPassword(args.password);
     if (user.passwordHash !== passwordHash) {
-      throw new Error("Invalid email or password");
+      throw new Error("Wrong password or email");
     }
 
     // Create session (expires in 24 hours)

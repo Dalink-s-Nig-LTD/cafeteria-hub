@@ -1,4 +1,5 @@
 import { query, mutation } from "./_generated/server";
+import * as auth from "./auth";
 import { v } from "convex/values";
 // Users system - not currently used with simple access code auth
 
@@ -48,19 +49,7 @@ export const getUser = query({
 export const getAllUsers = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
-    
-    // Check if user is superadmin
-    const currentUserRole = await ctx.db
-      .query("userRoles")
-      .withIndex("by_userId", (q) => q.eq("userId", userId))
-      .first();
-    
-    if (currentUserRole?.role !== "superadmin") {
-      throw new Error("Not authorized");
-    }
-    
+    // Return all users with their roles (no auth check)
     const users = await ctx.db.query("users").collect();
     const usersWithRoles = await Promise.all(
       users.map(async (user) => {
@@ -74,7 +63,6 @@ export const getAllUsers = query({
         };
       })
     );
-    
     return usersWithRoles;
   },
 });

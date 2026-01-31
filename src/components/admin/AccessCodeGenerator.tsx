@@ -56,12 +56,12 @@ export function AccessCodeGenerator({
     setIsGenerating(true);
     try {
       // Always generate cashier code (default behavior)
-      const code = await generateCode({
+      const codeObj = await generateCode({
         expiresInDays:
           expiresInDays === "never" ? undefined : parseInt(expiresInDays),
         role: "cashier",
       });
-      setGeneratedCode(code);
+      setGeneratedCode(codeObj.code);
       toast({
         title: "Success!",
         description: "Access code generated successfully",
@@ -117,7 +117,17 @@ export function AccessCodeGenerator({
     }
   };
 
-  const getStatusBadge = (code: any) => {
+  interface AccessCode {
+    _id: string;
+    code: string;
+    shift?: "morning" | "evening";
+    isActive: boolean;
+    expiresAt?: number;
+    usedCount: number;
+    usageCount?: number;
+  }
+
+  const getStatusBadge = (code: AccessCode) => {
     if (!code.isActive) {
       return (
         <Badge variant="destructive" className="gap-1">
@@ -125,10 +135,11 @@ export function AccessCodeGenerator({
         </Badge>
       );
     }
-    if (code.usageCount > 0) {
+    if ((code.usageCount ?? code.usedCount) > 0) {
       return (
         <Badge variant="secondary" className="gap-1">
-          <Check className="w-3 h-3" /> Used ({code.usageCount})
+          <Check className="w-3 h-3" /> Used (
+          {code.usageCount ?? code.usedCount})
         </Badge>
       );
     }
@@ -167,7 +178,7 @@ export function AccessCodeGenerator({
         <Card className="p-4">
           <p className="text-sm text-muted-foreground">Used</p>
           <p className="text-2xl font-bold">
-            {codes.filter((c) => c.usageCount > 0).length}
+            {codes.filter((c) => c.usedCount > 0).length}
           </p>
         </Card>
         <Card className="p-4">
@@ -247,7 +258,7 @@ export function AccessCodeGenerator({
                         ? new Date(code.expiresAt).toLocaleDateString()
                         : "Never"}
                     </TableCell>
-                    <TableCell>{code.usageCount} times</TableCell>
+                    <TableCell>{code.usedCount} times</TableCell>
                     <TableCell className="text-right">
                       {code.isActive && (
                         <Button
@@ -311,7 +322,7 @@ export function AccessCodeGenerator({
                   </div>
                   <div className="col-span-2">
                     <p className="text-muted-foreground">Usage</p>
-                    <p>{code.usageCount} times</p>
+                    <p>{code.usedCount} times</p>
                   </div>
                 </div>
                 {code.isActive && (

@@ -269,60 +269,6 @@ export function ExportReports() {
         </CardContent>
       </Card>
 
-      {/* Recent Exports */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg font-display">Recent Exports</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {[
-              {
-                name: "Sales Report - March 2024",
-                format: "PDF",
-                date: "Mar 15, 2024",
-                size: "245 KB",
-              },
-              {
-                name: "Orders Report - February 2024",
-                format: "CSV",
-                date: "Mar 1, 2024",
-                size: "1.2 MB",
-              },
-              {
-                name: "Inventory Report - Q1 2024",
-                format: "Excel",
-                date: "Feb 28, 2024",
-                size: "890 KB",
-              },
-            ].map((file, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="p-2 rounded bg-background">
-                    {file.format === "PDF" ? (
-                      <FileText className="w-4 h-4 text-destructive" />
-                    ) : (
-                      <FileSpreadsheet className="w-4 h-4 text-success" />
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-medium text-sm truncate">{file.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {file.date} · {file.size}
-                    </p>
-                  </div>
-                </div>
-                <Button variant="ghost" size="icon" className="shrink-0">
-                  <Download className="w-4 h-4" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
