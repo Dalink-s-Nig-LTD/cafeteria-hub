@@ -1,18 +1,18 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Eye, EyeOff } from 'lucide-react';
-import ruLogo from '@/assets/ru-logo.jpg';
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Eye, EyeOff } from "lucide-react";
+import ruLogo from "@/assets/ru-logo.jpg";
 
-type AuthMode = 'signin' | 'signup';
+type AuthMode = "signin" | "signup";
 
 export function Auth() {
-  const [mode, setMode] = useState<AuthMode>('signin');
+  const [mode, setMode] = useState<AuthMode>("signin");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,10 +20,10 @@ export function Auth() {
   const { signIn } = useAuthActions();
 
   // Form states
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [name, setName] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [name, setName] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,34 +32,38 @@ export function Auth() {
     setLoading(true);
 
     try {
-      if (mode === 'signup') {
+      if (mode === "signup") {
         if (password !== confirmPassword) {
-          throw new Error('Passwords do not match');
+          throw new Error("Passwords do not match");
         }
         if (password.length < 8) {
-          throw new Error('Password must be at least 8 characters');
+          throw new Error("Password must be at least 8 characters");
         }
-        
+
         // Sign up with Convex
-        await signIn("password", { 
-          email, 
-          password, 
+        await signIn("password", {
+          email,
+          password,
           name,
-          flow: "signUp" 
+          flow: "signUp",
         });
       } else {
         // Sign in with Convex
-        await signIn("password", { 
-          email, 
+        await signIn("password", {
+          email,
           password,
-          flow: "signIn" 
+          flow: "signIn",
         });
       }
-      
-      navigate('/');
+
+      navigate("/");
     } catch (err) {
-      console.error('Auth error:', err);
-      setError(err instanceof Error ? err.message : 'Authentication failed. Please try again.');
+      console.error("Auth error:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Authentication failed. Please try again.",
+      );
     } finally {
       setLoading(false);
     }
@@ -79,13 +83,16 @@ export function Auth() {
         <div className="flex-1 p-6 sm:p-10 lg:p-14 flex flex-col justify-center bg-white">
           <div className="max-w-sm mx-auto w-full lg:mx-0">
             <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground mb-8">
-              {mode === 'signin' ? 'Login' : 'Sign Up'}
+              {mode === "signin" ? "Login" : "Sign Up"}
             </h1>
 
             <form onSubmit={handleSubmit} className="space-y-5">
-              {mode === 'signup' && (
+              {mode === "signup" && (
                 <div className="space-y-2">
-                  <Label htmlFor="name" className="text-sm text-muted-foreground font-normal">
+                  <Label
+                    htmlFor="name"
+                    className="text-sm text-muted-foreground font-normal"
+                  >
                     Full Name
                   </Label>
                   <Input
@@ -100,7 +107,10 @@ export function Auth() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm text-muted-foreground font-normal">
+                <Label
+                  htmlFor="email"
+                  className="text-sm text-muted-foreground font-normal"
+                >
                   Username or email
                 </Label>
                 <Input
@@ -115,11 +125,14 @@ export function Auth() {
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="password" className="text-sm text-muted-foreground font-normal">
+                  <Label
+                    htmlFor="password"
+                    className="text-sm text-muted-foreground font-normal"
+                  >
                     Password
                   </Label>
-                  {mode === 'signin' && (
-                    <button 
+                  {mode === "signin" && (
+                    <button
                       type="button"
                       className="text-sm text-primary hover:underline"
                     >
@@ -130,7 +143,7 @@ export function Auth() {
                 <div className="relative">
                   <Input
                     id="password"
-                    type={showPassword ? 'text' : 'password'}
+                    type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="h-12 bg-[#f5f5f7] border-0 rounded-lg pr-12 focus-visible:ring-1 focus-visible:ring-primary"
@@ -150,14 +163,17 @@ export function Auth() {
                 </div>
               </div>
 
-              {mode === 'signup' && (
+              {mode === "signup" && (
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword" className="text-sm text-muted-foreground font-normal">
+                  <Label
+                    htmlFor="confirmPassword"
+                    className="text-sm text-muted-foreground font-normal"
+                  >
                     Confirm Password
                   </Label>
                   <Input
                     id="confirmPassword"
-                    type={showPassword ? 'text' : 'password'}
+                    type={showPassword ? "text" : "password"}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     className="h-12 bg-[#f5f5f7] border-0 rounded-lg focus-visible:ring-1 focus-visible:ring-primary"
@@ -166,15 +182,20 @@ export function Auth() {
                 </div>
               )}
 
-              {mode === 'signin' && (
+              {mode === "signin" && (
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="remember"
                     checked={rememberMe}
-                    onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                    onCheckedChange={(checked) =>
+                      setRememberMe(checked as boolean)
+                    }
                     className="border-muted-foreground/40 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                   />
-                  <Label htmlFor="remember" className="text-sm text-muted-foreground cursor-pointer font-normal">
+                  <Label
+                    htmlFor="remember"
+                    className="text-sm text-muted-foreground cursor-pointer font-normal"
+                  >
                     Remember me
                   </Label>
                 </div>
@@ -193,23 +214,27 @@ export function Auth() {
               >
                 {loading ? (
                   <span className="animate-spin h-5 w-5 border-2 border-current border-t-transparent rounded-full" />
+                ) : mode === "signin" ? (
+                  "Login"
                 ) : (
-                  mode === 'signin' ? 'Login' : 'Sign Up'
+                  "Sign Up"
                 )}
               </Button>
             </form>
 
             <p className="mt-8 text-center text-sm text-muted-foreground">
-              {mode === 'signin' ? "Don't have an account ?" : 'Already have an account ?'}
+              {mode === "signin"
+                ? "Don't have an account ?"
+                : "Already have an account ?"}
               <button
                 type="button"
                 className="ml-1 text-primary hover:underline font-medium"
                 onClick={() => {
-                  setMode(mode === 'signin' ? 'signup' : 'signin');
+                  setMode(mode === "signin" ? "signup" : "signin");
                   setError(null);
                 }}
               >
-                {mode === 'signin' ? 'Sign up' : 'Login'}
+                {mode === "signin" ? "Sign up" : "Login"}
               </button>
             </p>
           </div>
@@ -219,7 +244,7 @@ export function Auth() {
         <div className="hidden lg:block relative w-[45%]">
           {/* Curved background shape */}
           <div className="absolute inset-0 bg-[#f0f4f8] rounded-tl-[80px]" />
-          
+
           {/* Content */}
           <div className="relative h-full flex flex-col items-center justify-center p-8">
             {/* Illustration area */}
@@ -228,26 +253,26 @@ export function Auth() {
               <div className="relative mx-auto">
                 {/* Floating elements around */}
                 <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full bg-[#ff6b6b]/20 flex items-center justify-center">
-                  <span className="text-xl">📧</span>
+                  <span className="text-xl">🍕</span>
                 </div>
                 <div className="absolute -top-8 right-4 w-10 h-10 rounded-full bg-[#4ecdc4]/20 flex items-center justify-center">
-                  <span className="text-lg">📊</span>
+                  <span className="text-lg">🍔</span>
                 </div>
                 <div className="absolute top-8 -right-6 w-11 h-11 rounded-full bg-[#ff9f43]/20 flex items-center justify-center">
-                  <span className="text-lg">💳</span>
+                  <span className="text-lg">🍜</span>
                 </div>
                 <div className="absolute bottom-4 -left-8 w-10 h-10 rounded-full bg-[#6c5ce7]/20 flex items-center justify-center">
-                  <span className="text-lg">🔐</span>
+                  <span className="text-lg">🥗</span>
                 </div>
                 <div className="absolute bottom-0 right-0 w-10 h-10 rounded-full bg-[#00b894]/20 flex items-center justify-center">
-                  <span className="text-lg">📱</span>
+                  <span className="text-lg">🍰</span>
                 </div>
-                
+
                 {/* Center logo */}
                 <div className="w-28 h-28 mx-auto rounded-full overflow-hidden border-4 border-white shadow-xl bg-white">
-                  <img 
-                    src={ruLogo} 
-                    alt="Redeemers University Logo" 
+                  <img
+                    src={ruLogo}
+                    alt="Redeemers University Logo"
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -260,7 +285,8 @@ export function Auth() {
                 New Era Cafeteria POS
               </h2>
               <p className="text-muted-foreground text-sm leading-relaxed">
-                Streamline your cafeteria operations with our modern point of sale system. Fast, efficient, and designed for your needs.
+                Streamline your cafeteria operations with our modern point of
+                sale system. Fast, efficient, and designed for your needs.
               </p>
             </div>
 
@@ -273,15 +299,6 @@ export function Auth() {
           </div>
         </div>
       </Card>
-
-      {/* Back to home link */}
-      <Button
-        variant="ghost"
-        className="absolute top-4 left-4 text-white/80 hover:text-white hover:bg-white/10"
-        onClick={() => navigate('/')}
-      >
-        ← Back to home
-      </Button>
     </div>
   );
 }
