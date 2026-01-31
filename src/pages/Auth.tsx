@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Utensils } from 'lucide-react';
+import { Eye, EyeOff, Utensils, ShoppingBag, CreditCard, ChefHat, Coffee } from 'lucide-react';
 import ruLogo from '@/assets/ru-logo.jpg';
 
 type AuthMode = 'signin' | 'signup';
@@ -37,14 +37,11 @@ export function Auth() {
         if (password.length < 8) {
           throw new Error('Password must be at least 8 characters');
         }
-        // TODO: Implement Convex signup
         console.log('Signup:', { email, password, name });
       } else {
-        // TODO: Implement Convex signin
         console.log('Signin:', { email, password, rememberMe });
       }
       
-      // For now, navigate to home after mock auth
       setTimeout(() => {
         navigate('/');
         setLoading(false);
@@ -56,253 +53,217 @@ export function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
-      {/* Left side - Form */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-8 lg:p-12 bg-background">
-        <div className="w-full max-w-md">
-          {/* Mobile Logo */}
-          <div className="lg:hidden flex items-center justify-center mb-8">
-            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-primary/20 shadow-lg">
+    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-primary">
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent/10 rounded-full blur-3xl transform -translate-x-1/2 translate-y-1/2" />
+      </div>
+
+      {/* Main Card */}
+      <Card className="relative w-full max-w-4xl overflow-hidden shadow-2xl border-0 flex flex-col lg:flex-row min-h-[500px] lg:min-h-[560px]">
+        {/* Left Side - Form */}
+        <div className="flex-1 p-6 sm:p-8 lg:p-12 flex flex-col justify-center bg-card">
+          <div className="max-w-sm mx-auto w-full">
+            <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground mb-8 text-center lg:text-left">
+              {mode === 'signin' ? 'Login' : 'Sign Up'}
+            </h1>
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {mode === 'signup' && (
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-sm text-muted-foreground">
+                    Full Name
+                  </Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    placeholder="John Doe"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="h-12 bg-secondary/50 border-0 focus-visible:ring-1 focus-visible:ring-primary"
+                    required
+                  />
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-sm text-muted-foreground">
+                  Username or email
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder=""
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="h-12 bg-secondary/50 border-0 focus-visible:ring-1 focus-visible:ring-primary"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password" className="text-sm text-muted-foreground">
+                    Password
+                  </Label>
+                  {mode === 'signin' && (
+                    <Button 
+                      variant="link" 
+                      className="px-0 text-sm text-primary h-auto p-0 font-normal"
+                      type="button"
+                    >
+                      Forgot password ?
+                    </Button>
+                  )}
+                </div>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder=""
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="h-12 bg-secondary/50 border-0 pr-12 focus-visible:ring-1 focus-visible:ring-primary"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {mode === 'signup' && (
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword" className="text-sm text-muted-foreground">
+                    Confirm Password
+                  </Label>
+                  <Input
+                    id="confirmPassword"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder=""
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="h-12 bg-secondary/50 border-0 focus-visible:ring-1 focus-visible:ring-primary"
+                    required
+                  />
+                </div>
+              )}
+
+              {mode === 'signin' && (
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="remember"
+                    checked={rememberMe}
+                    onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                    className="border-muted-foreground/50"
+                  />
+                  <Label htmlFor="remember" className="text-sm text-muted-foreground cursor-pointer font-normal">
+                    Remember me
+                  </Label>
+                </div>
+              )}
+
+              {error && (
+                <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+                  {error}
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                className="w-full h-12 text-base rounded-lg"
+                disabled={loading}
+              >
+                {loading ? (
+                  <span className="animate-spin h-5 w-5 border-2 border-current border-t-transparent rounded-full" />
+                ) : (
+                  mode === 'signin' ? 'Login' : 'Sign Up'
+                )}
+              </Button>
+            </form>
+
+            <p className="mt-8 text-center text-sm text-muted-foreground">
+              {mode === 'signin' ? "Don't have an account ?" : 'Already have an account ?'}
+              <Button
+                variant="link"
+                className="px-1 text-primary font-medium"
+                onClick={() => {
+                  setMode(mode === 'signin' ? 'signup' : 'signin');
+                  setError(null);
+                }}
+              >
+                {mode === 'signin' ? 'Sign up' : 'Login'}
+              </Button>
+            </p>
+          </div>
+        </div>
+
+        {/* Right Side - Illustration */}
+        <div className="hidden lg:flex flex-1 bg-gradient-to-br from-secondary/80 to-secondary items-center justify-center p-8 relative overflow-hidden">
+          {/* Floating Icons */}
+          <div className="absolute inset-0">
+            <div className="absolute top-8 right-12 w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center animate-float">
+              <Utensils className="w-7 h-7 text-primary" />
+            </div>
+            <div className="absolute top-20 left-16 w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center animate-float" style={{ animationDelay: '0.5s' }}>
+              <Coffee className="w-6 h-6 text-accent" />
+            </div>
+            <div className="absolute bottom-32 right-20 w-10 h-10 rounded-xl bg-success/20 flex items-center justify-center animate-float" style={{ animationDelay: '1s' }}>
+              <CreditCard className="w-5 h-5 text-success" />
+            </div>
+            <div className="absolute bottom-20 left-12 w-12 h-12 rounded-full bg-primary/15 flex items-center justify-center animate-float" style={{ animationDelay: '1.5s' }}>
+              <ShoppingBag className="w-6 h-6 text-primary" />
+            </div>
+            <div className="absolute top-1/3 right-8 w-10 h-10 rounded-lg bg-accent/15 flex items-center justify-center animate-float" style={{ animationDelay: '2s' }}>
+              <ChefHat className="w-5 h-5 text-accent" />
+            </div>
+          </div>
+
+          {/* Center content */}
+          <div className="relative z-10 text-center max-w-xs">
+            {/* Logo */}
+            <div className="w-20 h-20 mx-auto mb-6 rounded-full overflow-hidden border-4 border-primary/20 shadow-lg bg-white">
               <img 
                 src={ruLogo} 
                 alt="Redeemers University Logo" 
                 className="w-full h-full object-cover"
               />
             </div>
-          </div>
 
-          <Card className="border-0 shadow-none lg:shadow-card lg:border">
-            <CardHeader className="space-y-1 pb-4">
-              <CardTitle className="text-2xl sm:text-3xl font-display">
-                {mode === 'signin' ? 'Welcome back' : 'Create account'}
-              </CardTitle>
-              <p className="text-muted-foreground text-sm sm:text-base">
-                {mode === 'signin' 
-                  ? 'Enter your credentials to access your account' 
-                  : 'Fill in your details to get started'}
-              </p>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {mode === 'signup' && (
-                  <div className="space-y-2">
-                    <Label htmlFor="name" className="text-sm font-medium">
-                      Full Name
-                    </Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="name"
-                        type="text"
-                        placeholder="John Doe"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className="pl-10 h-11 sm:h-12"
-                        required
-                      />
-                    </div>
-                  </div>
-                )}
+            <h2 className="text-xl font-display font-bold text-foreground mb-3">
+              New Era Cafeteria POS
+            </h2>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              Streamline your cafeteria operations with our modern point of sale system. Fast, efficient, and designed for your needs.
+            </p>
 
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm font-medium">
-                    Email Address
-                  </Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="you@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10 h-11 sm:h-12"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="password" className="text-sm font-medium">
-                    Password
-                  </Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="password"
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10 pr-10 h-11 sm:h-12"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                {mode === 'signup' && (
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword" className="text-sm font-medium">
-                      Confirm Password
-                    </Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="confirmPassword"
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder="••••••••"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="pl-10 h-11 sm:h-12"
-                        required
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {mode === 'signin' && (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="remember"
-                        checked={rememberMe}
-                        onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                      />
-                      <Label htmlFor="remember" className="text-sm text-muted-foreground cursor-pointer">
-                        Remember me
-                      </Label>
-                    </div>
-                    <Button 
-                      variant="link" 
-                      className="px-0 text-sm text-primary h-auto"
-                      type="button"
-                    >
-                      Forgot password?
-                    </Button>
-                  </div>
-                )}
-
-                {error && (
-                  <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
-                    {error}
-                  </div>
-                )}
-
-                <Button
-                  type="submit"
-                  className="w-full h-11 sm:h-12 text-base gap-2"
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <span className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
-                  ) : (
-                    <>
-                      {mode === 'signin' ? 'Sign In' : 'Create Account'}
-                      <ArrowRight className="h-4 w-4" />
-                    </>
-                  )}
-                </Button>
-              </form>
-
-              <div className="mt-6 text-center">
-                <p className="text-sm text-muted-foreground">
-                  {mode === 'signin' ? "Don't have an account?" : 'Already have an account?'}
-                  <Button
-                    variant="link"
-                    className="px-1 text-primary"
-                    onClick={() => {
-                      setMode(mode === 'signin' ? 'signup' : 'signin');
-                      setError(null);
-                    }}
-                  >
-                    {mode === 'signin' ? 'Sign up' : 'Sign in'}
-                  </Button>
-                </p>
-              </div>
-
-              {/* Divider with access code option */}
-              <div className="relative mt-6">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-border" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">
-                    Or
-                  </span>
-                </div>
-              </div>
-
-              <Button
-                variant="outline"
-                className="w-full mt-4 h-11 sm:h-12"
-                onClick={() => navigate('/')}
-              >
-                Use Access Code Instead
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* Right side - Branding (hidden on mobile) */}
-      <div className="hidden lg:flex flex-1 gradient-primary items-center justify-center p-12 relative overflow-hidden">
-        {/* Background pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 left-10 w-64 h-64 rounded-full bg-white/20 blur-3xl" />
-          <div className="absolute bottom-10 right-10 w-96 h-96 rounded-full bg-accent/30 blur-3xl" />
-        </div>
-
-        <div className="relative z-10 text-center text-white max-w-lg">
-          {/* Logo */}
-          <div className="w-24 h-24 mx-auto mb-8 rounded-full overflow-hidden border-4 border-white/30 shadow-2xl">
-            <img 
-              src={ruLogo} 
-              alt="Redeemers University Logo" 
-              className="w-full h-full object-cover"
-            />
-          </div>
-
-          <h2 className="font-display text-4xl font-bold mb-4">
-            Redeemers University
-          </h2>
-          <p className="text-2xl font-semibold text-accent mb-6">
-            New Era Cafeteria
-          </p>
-          
-          <p className="text-lg text-white/80 mb-8">
-            Experience seamless dining with our modern Point of Sale system. 
-            Fast, efficient, and designed for the future.
-          </p>
-
-          {/* Feature pills */}
-          <div className="flex flex-wrap justify-center gap-3">
-            {['Quick Orders', 'Real-time Analytics', 'Secure Payments'].map((feature) => (
-              <span 
-                key={feature}
-                className="px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm text-sm font-medium"
-              >
-                {feature}
-              </span>
-            ))}
-          </div>
-
-          {/* Floating food icons */}
-          <div className="absolute top-20 right-20 animate-float">
-            <Utensils className="w-12 h-12 text-accent/40" />
+            {/* Dots indicator */}
+            <div className="flex items-center justify-center gap-2 mt-8">
+              <span className="w-8 h-2 rounded-full bg-primary" />
+              <span className="w-2 h-2 rounded-full bg-muted-foreground/30" />
+              <span className="w-2 h-2 rounded-full bg-muted-foreground/30" />
+            </div>
           </div>
         </div>
-      </div>
+      </Card>
+
+      {/* Back to home link */}
+      <Button
+        variant="ghost"
+        className="absolute top-4 left-4 text-white/80 hover:text-white hover:bg-white/10"
+        onClick={() => navigate('/')}
+      >
+        ← Back to home
+      </Button>
     </div>
   );
 }
