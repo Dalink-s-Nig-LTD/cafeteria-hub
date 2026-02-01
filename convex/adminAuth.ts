@@ -1,16 +1,69 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import * as bcrypt from "bcryptjs";
 
-// Password hashing with bcrypt
+// Password hashing using PBKDF2 (Web Crypto API compatible)
 async function hashPassword(password: string): Promise<string> {
-  const salt = await bcrypt.genSalt(10);
-  return bcrypt.hash(password, salt);
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    data,
+    { name: "PBKDF2" },
+    false,
+    ["deriveBits"]
+  );
+  
+  const derivedBits = await crypto.subtle.deriveBits(
+    {
+      name: "PBKDF2",
+      salt: salt,
+      iterations: 100000,
+      hash: "SHA-256"
+    },
+    keyMaterial,
+    256
+  );
+  
+  const hashArray = Array.from(new Uint8Array(derivedBits));
+  const saltArray = Array.from(salt);
+  
+  // Combine salt and hash
+  return JSON.stringify({ salt: saltArray, hash: hashArray });
 }
 
 // Verify password
-async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  return bcrypt.compare(password, hash);
+async function verifyPassword(password: string, storedHash: string): Promise<boolean> {
+  try {
+    const { salt, hash } = JSON.parse(storedHash);
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    
+    const keyMaterial = await crypto.subtle.importKey(
+      "raw",
+      data,
+      { name: "PBKDF2" },
+      false,
+      ["deriveBits"]
+    );
+    
+    const derivedBits = await crypto.subtle.deriveBits(
+      {
+        name: "PBKDF2",
+        salt: new Uint8Array(salt),
+        iterations: 100000,
+        hash: "SHA-256"
+      },
+      keyMaterial,
+      256
+    );
+    
+    const hashArray = Array.from(new Uint8Array(derivedBits));
+    return JSON.stringify(hashArray) === JSON.stringify(hash);
+  } catch (error) {
+    return false;
+  }
 }
 
 // Email validation
@@ -133,7 +186,14 @@ export const signIn = mutation({
     }
 
     // Verify password
-    const isValid = await verifyPassword(args.password, user.passwordHash);
+    let isValid = false;
+    try {
+      isValid = await verifyPassword(args.password, user.passwordHash);
+    } catch (error) {
+      console.error("Password verification error:", error);
+      throw new Error("Wrong password or email");
+    }
+    
     if (!isValid) {
       // Increment failed attempts
       const attempts = (user.failedLoginAttempts || 0) + 1;

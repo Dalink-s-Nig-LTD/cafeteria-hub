@@ -122,10 +122,24 @@ export function UserManagement() {
       setPassword("");
       setRole("manager");
     } catch (error) {
+      let errorMsg = "Failed to create admin. Please try again.";
+      if (error instanceof Error) {
+        const msg = error.message.toLowerCase();
+        if (msg.includes("[convex") || msg.includes("server error")) {
+          errorMsg = "Unable to save. Please check your connection.";
+        } else if (msg.includes("email already")) {
+          errorMsg = "This email is already registered";
+        } else if (msg.includes("invalid email")) {
+          errorMsg = "Please enter a valid email address";
+        } else if (msg.includes("password must")) {
+          errorMsg = error.message;
+        } else if (!msg.includes("[convex")) {
+          errorMsg = error.message;
+        }
+      }
       toast({
         title: "Error",
-        description:
-          error instanceof Error ? error.message : "Failed to create admin",
+        description: errorMsg,
         variant: "destructive",
       });
     }
@@ -159,10 +173,17 @@ export function UserManagement() {
       setEditDialogOpen(false);
       setSelectedUserId(null);
     } catch (error) {
+      let errorMsg = "Failed to update role. Please try again.";
+      if (
+        error instanceof Error &&
+        !error.message.toLowerCase().includes("[convex") &&
+        !error.message.toLowerCase().includes("server error")
+      ) {
+        errorMsg = error.message;
+      }
       toast({
         title: "Error",
-        description:
-          error instanceof Error ? error.message : "Failed to update role",
+        description: errorMsg,
         variant: "destructive",
       });
     }
@@ -190,10 +211,17 @@ export function UserManagement() {
         description: "Admin user deleted successfully.",
       });
     } catch (error) {
+      let errorMsg = "Failed to delete admin. Please try again.";
+      if (
+        error instanceof Error &&
+        !error.message.toLowerCase().includes("[convex") &&
+        !error.message.toLowerCase().includes("server error")
+      ) {
+        errorMsg = error.message;
+      }
       toast({
         title: "Error",
-        description:
-          error instanceof Error ? error.message : "Failed to delete admin",
+        description: errorMsg,
         variant: "destructive",
       });
     }

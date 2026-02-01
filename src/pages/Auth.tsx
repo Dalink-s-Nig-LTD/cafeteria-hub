@@ -90,14 +90,28 @@ export function Auth() {
       console.error("Auth error:", err);
       let msg = "Authentication failed. Please try again.";
       if (err instanceof Error) {
-        // Always show the same message for wrong credentials
-        if (
-          err.message.toLowerCase().includes("wrong password") ||
-          err.message.toLowerCase().includes("wrong password or email")
+        const errMsg = err.message.toLowerCase();
+
+        // Filter out Convex technical errors
+        if (errMsg.includes("[convex") || errMsg.includes("server error")) {
+          msg = "Unable to connect. Please check your internet and try again.";
+        } else if (
+          errMsg.includes("wrong password") ||
+          errMsg.includes("wrong password or email")
         ) {
           msg = "Wrong password or email";
+        } else if (errMsg.includes("email already registered")) {
+          msg = "This email is already registered";
+        } else if (errMsg.includes("invalid email")) {
+          msg = "Please enter a valid email address";
+        } else if (errMsg.includes("password must")) {
+          msg = err.message; // Keep password requirement messages
+        } else if (errMsg.includes("locked")) {
+          msg = err.message; // Keep account locked messages
+        } else if (errMsg.includes("name must")) {
+          msg = "Name must be between 2 and 100 characters";
         } else {
-          msg = err.message;
+          msg = "Authentication failed. Please try again.";
         }
       }
       setError(msg);

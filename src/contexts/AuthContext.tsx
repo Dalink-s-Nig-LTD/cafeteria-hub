@@ -78,9 +78,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { success: false, error: "Invalid access code" };
     } catch (error) {
       console.error("Login error:", error);
+      let errorMsg = "Login failed. Please try again.";
+      if (error instanceof Error) {
+        const msg = error.message.toLowerCase();
+        if (msg.includes("[convex") || msg.includes("server error")) {
+          errorMsg = "Unable to connect. Please check your internet.";
+        } else if (msg.includes("invalid")) {
+          errorMsg = "Invalid access code";
+        } else if (msg.includes("expired")) {
+          errorMsg = "Access code has expired";
+        } else if (msg.includes("deactivated")) {
+          errorMsg = "Access code has been deactivated";
+        } else if (!msg.includes("[convex")) {
+          errorMsg = error.message;
+        }
+      }
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Login failed",
+        error: errorMsg,
       };
     }
   };

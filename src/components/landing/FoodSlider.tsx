@@ -1,16 +1,46 @@
-import React, { useEffect, useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { menuItems } from '@/data/menuItems';
+import React, { useEffect, useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { menuItems } from "@/data/menuItems";
 
 const foodImages = [
-  { name: 'Jollof Rice', category: 'Rice', image: 'https://images.unsplash.com/photo-1604329760661-e71dc83f8f26?w=800&q=80', price: 800 },
-  { name: 'Grilled Chicken', category: 'Protein', image: 'https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=800&q=80', price: 1200 },
-  { name: 'Fried Rice', category: 'Rice', image: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=800&q=80', price: 900 },
-  { name: 'Meat Pie', category: 'Snacks', image: 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=800&q=80', price: 400 },
-  { name: 'Fresh Drinks', category: 'Drinks', image: 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=800&q=80', price: 500 },
+  {
+    name: "Jollof Rice",
+    category: "Rice",
+    image:
+      "https://images.unsplash.com/photo-1604329760661-e71dc83f8f26?w=800&q=80",
+    price: 800,
+  },
+  {
+    name: "Grilled Chicken",
+    category: "Protein",
+    image:
+      "https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=800&q=80",
+    price: 1200,
+  },
+  {
+    name: "Fried Rice",
+    category: "Rice",
+    image:
+      "https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=800&q=80",
+    price: 900,
+  },
+  {
+    name: "Meat Pie",
+    category: "Snacks",
+    image:
+      "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=800&q=80",
+    price: 400,
+  },
+  {
+    name: "Fresh Drinks",
+    category: "Drinks",
+    image:
+      "https://images.unsplash.com/photo-1544145945-f90425340c7e?w=800&q=80",
+    price: 500,
+  },
 ];
 
 export function FoodSlider() {
@@ -24,7 +54,9 @@ export function FoodSlider() {
   }, []);
 
   const goToPrevious = () => {
-    setCurrentIndex((prev) => (prev - 1 + foodImages.length) % foodImages.length);
+    setCurrentIndex(
+      (prev) => (prev - 1 + foodImages.length) % foodImages.length,
+    );
   };
 
   const goToNext = () => {
@@ -34,7 +66,7 @@ export function FoodSlider() {
   return (
     <div className="relative w-full max-w-4xl mx-auto">
       <div className="overflow-hidden rounded-2xl shadow-xl">
-        <div 
+        <div
           className="flex transition-transform duration-500 ease-out"
           style={{ transform: `translateX(-${currentIndex * 100}%)` }}
         >
@@ -54,9 +86,6 @@ export function FoodSlider() {
                   <h3 className="font-display text-2xl md:text-3xl font-bold mb-1">
                     {food.name}
                   </h3>
-                  <p className="text-xl font-semibold text-accent">
-                    ₦{food.price.toLocaleString()}
-                  </p>
                 </div>
               </div>
             </div>
@@ -88,9 +117,9 @@ export function FoodSlider() {
           <button
             key={index}
             className={`w-2 h-2 rounded-full transition-all duration-300 ${
-              index === currentIndex 
-                ? 'bg-primary w-6' 
-                : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
+              index === currentIndex
+                ? "bg-primary w-6"
+                : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
             }`}
             onClick={() => setCurrentIndex(index)}
           />
