@@ -65,13 +65,13 @@ const POSReceipt = ({
     <div
       className="pos-receipt"
       style={{
-        width: "58mm",
-        maxWidth: "58mm",
+        width: "80mm",
+        maxWidth: "80mm",
         margin: 0,
-        padding: "2mm",
+        padding: "3mm",
         backgroundColor: "white",
         fontFamily: "'Courier New', Courier, monospace",
-        fontSize: "11px",
+        fontSize: "12px",
         color: "#000",
         position: "relative",
         boxSizing: "border-box",
@@ -202,13 +202,13 @@ export function ReceiptModal({ order, isOpen, onClose }: ReceiptModalProps) {
           <style>
             @media print {
               @page {
-                size: 58mm auto;
+                size: 80mm auto;
                 margin: 0;
               }
               html, body {
                 margin: 0 !important;
                 padding: 0 !important;
-                width: 58mm !important;
+                width: 80mm !important;
               }
               body {
                 -webkit-print-color-adjust: exact !important;
@@ -223,20 +223,20 @@ export function ReceiptModal({ order, isOpen, onClose }: ReceiptModalProps) {
             html, body {
               margin: 0;
               padding: 0;
-              width: 58mm;
+              width: 80mm;
               font-family: 'Courier New', Courier, monospace;
-              font-size: 11px;
+              font-size: 12px;
               color: #000;
               background: white;
             }
             .pos-receipt {
-              width: 58mm !important;
-              max-width: 58mm !important;
-              padding: 2mm !important;
+              width: 80mm !important;
+              max-width: 80mm !important;
+              padding: 3mm !important;
               margin: 0 !important;
               background: white !important;
               font-family: 'Courier New', Courier, monospace !important;
-              font-size: 11px !important;
+              font-size: 12px !important;
               color: #000 !important;
             }
           </style>
