@@ -147,7 +147,7 @@ export const signUp = mutation({
     return { 
       success: true, 
       userId,
-      sessionId,
+      sessionId: sessionId.toString(),
       user: {
         email: args.email,
         name: args.name,
@@ -227,7 +227,7 @@ export const signIn = mutation({
     return { 
       success: true,
       userId: user._id,
-      sessionId,
+      sessionId: sessionId.toString(),
       user: {
         email: user.email,
         name: user.name,

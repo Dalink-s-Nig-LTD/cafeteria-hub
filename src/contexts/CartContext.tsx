@@ -36,120 +36,167 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  // PDF generation for daily sales
+  // Print daily sales report (receipt style)
   const downloadDailySalesPDF = () => {
     const todaysOrders = getTodaysOrders();
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.width;
-
-    // Title
-    doc.setFontSize(18);
-    doc.text("New Era Cafeteria", pageWidth / 2, 20, { align: "center" });
-
-    doc.setFontSize(14);
-    doc.text("Daily Sales Report", pageWidth / 2, 28, { align: "center" });
-
-    doc.setFontSize(10);
-    doc.text(`Date: ${new Date().toLocaleDateString()}`, pageWidth / 2, 36, {
-      align: "center",
-    });
-
-    // Prepare table data
-    const tableData: (string | Record<string, unknown>)[][] = [];
     let grandTotal = 0;
+    todaysOrders.forEach((order) => (grandTotal += order.total));
 
-    todaysOrders.forEach((order, idx) => {
-      const orderTime =
-        order.timestamp instanceof Date
-          ? order.timestamp.toLocaleTimeString()
-          : new Date(order.timestamp).toLocaleTimeString();
+    // Create a printable window
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) return;
 
-      const orderHeader = `Order #${order.id} - ${orderTime} - ${order.paymentMethod}`;
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Daily Sales Report</title>
+          <style>
+            @media print {
+              @page { margin: 0; }
+              body { margin: 1cm; }
+            }
+            body {
+              font-family: 'Courier New', monospace;
+              max-width: 80mm;
+              margin: 0 auto;
+              padding: 10px;
+              font-size: 12px;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 20px;
+              border-bottom: 2px dashed #000;
+              padding-bottom: 10px;
+            }
+            .title {
+              font-size: 18px;
+              font-weight: 900;
+              margin-bottom: 5px;
+            }
+            .subtitle {
+              font-size: 14px;
+              font-weight: bold;
+              margin-bottom: 3px;
+            }
+            .date {
+              font-size: 11px;
+              margin-top: 5px;
+            }
+            .order {
+              margin-bottom: 15px;
+              border-bottom: 1px dashed #000;
+              padding-bottom: 10px;
+            }
+            .order-header {
+              font-weight: bold;
+              margin-bottom: 8px;
+              font-size: 11px;
+            }
+            .item-row {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 3px;
+              font-size: 11px;
+            }
+            .item-name {
+              flex: 1;
+            }
+            .item-qty {
+              width: 30px;
+              text-align: center;
+            }
+            .item-total {
+              width: 70px;
+              text-align: right;
+            }
+            .order-total {
+              font-weight: bold;
+              text-align: right;
+              margin-top: 5px;
+              padding-top: 5px;
+              border-top: 1px solid #000;
+            }
+            .grand-total {
+              margin-top: 15px;
+              padding-top: 10px;
+              border-top: 2px solid #000;
+              text-align: center;
+              font-weight: bold;
+              font-size: 14px;
+            }
+            .footer {
+              margin-top: 20px;
+              text-align: center;
+              font-size: 10px;
+              border-top: 2px dashed #000;
+              padding-top: 10px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="title">NEW ERA CAFETERIA</div>
+            <div class="subtitle">Daily Sales Report</div>
+            <div class="date">${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</div>
+          </div>
 
-      tableData.push([
-        {
-          content: orderHeader,
-          colSpan: 4,
-          styles: { fontStyle: "bold", fillColor: [220, 220, 220] },
-        },
-      ]);
+          ${todaysOrders
+            .map((order) => {
+              const orderTime =
+                order.timestamp instanceof Date
+                  ? order.timestamp.toLocaleTimeString()
+                  : new Date(order.timestamp).toLocaleTimeString();
 
-      order.items.forEach((item) => {
-        const itemTotal = item.price * item.quantity;
-        tableData.push([
-          item.name,
-          item.quantity.toString(),
-          `N${item.price.toLocaleString()}`,
-          `N${itemTotal.toLocaleString()}`,
-        ]);
-      });
+              return `
+              <div class="order">
+                <div class="order-header">
+                  Order #${order.id}<br>
+                  ${orderTime} - ${order.paymentMethod.toUpperCase()}
+                </div>
+                ${order.items
+                  .map(
+                    (item) => `
+                  <div class="item-row">
+                    <span class="item-name">${item.name}</span>
+                    <span class="item-qty">x${item.quantity}</span>
+                    <span class="item-total">₦${(item.price * item.quantity).toLocaleString()}</span>
+                  </div>
+                `,
+                  )
+                  .join("")}
+                <div class="order-total">
+                  Order Total: ₦${order.total.toLocaleString()}
+                </div>
+              </div>
+            `;
+            })
+            .join("")}
 
-      tableData.push([
-        {
-          content: "Order Total:",
-          colSpan: 3,
-          styles: { fontStyle: "bold", halign: "right" },
-        },
-        {
-          content: `N${order.total.toLocaleString()}`,
-          styles: { fontStyle: "bold" },
-        },
-      ]);
+          <div class="grand-total">
+            Total Orders: ${todaysOrders.length}<br>
+            GRAND TOTAL: ₦${grandTotal.toLocaleString()}
+          </div>
 
-      grandTotal += order.total;
+          <div class="footer">
+            Redeemers University, Ede<br>
+            Thank you for your business!
+          </div>
 
-      if (idx < todaysOrders.length - 1) {
-        tableData.push([
-          { content: "", colSpan: 4, styles: { minCellHeight: 2 } },
-        ]);
-      }
-    });
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(() => window.close(), 100);
+            }
+          </script>
+        </body>
+      </html>
+    `;
 
-    autoTable(doc, {
-      startY: 44,
-      head: [["Item", "Qty", "Price", "Total"]],
-      body: tableData,
-      foot: [
-        ["", "", "", ""],
-        [
-          "Total Orders:",
-          todaysOrders.length.toString(),
-          "Grand Total:",
-          `N${grandTotal.toLocaleString()}`,
-        ],
-      ],
-      theme: "grid",
-      headStyles: {
-        fillColor: [66, 139, 202],
-        fontStyle: "bold",
-        fontSize: 11,
-        textColor: [255, 255, 255],
-      },
-      footStyles: {
-        fillColor: [240, 240, 240],
-        fontStyle: "bold",
-        fontSize: 11,
-        textColor: [0, 0, 0],
-      },
-      styles: {
-        fontSize: 10,
-        cellPadding: 2,
-        textColor: [0, 0, 0],
-        lineColor: [0, 0, 0],
-        lineWidth: 0.3,
-      },
-      columnStyles: {
-        0: { cellWidth: 70 },
-        1: { cellWidth: 20, halign: "center" },
-        2: { cellWidth: 40, halign: "right" },
-        3: { cellWidth: 40, halign: "right" },
-      },
-    });
-
-    doc.save(
-      `Daily_Sales_${new Date().toLocaleDateString().replace(/\//g, "_")}.pdf`,
-    );
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
   };
+
   const [items, setItems] = useState<CartItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const createOrder = useMutation(api.orders.createOrder);

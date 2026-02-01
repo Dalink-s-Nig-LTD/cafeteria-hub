@@ -92,10 +92,8 @@ export function Auth() {
       if (err instanceof Error) {
         const errMsg = err.message.toLowerCase();
 
-        // Filter out Convex technical errors
-        if (errMsg.includes("[convex") || errMsg.includes("server error")) {
-          msg = "Unable to connect. Please check your internet and try again.";
-        } else if (
+        // Check specific errors first
+        if (
           errMsg.includes("wrong password") ||
           errMsg.includes("wrong password or email")
         ) {
@@ -110,6 +108,12 @@ export function Auth() {
           msg = err.message; // Keep account locked messages
         } else if (errMsg.includes("name must")) {
           msg = "Name must be between 2 and 100 characters";
+        } else if (
+          errMsg.includes("[convex") ||
+          errMsg.includes("server error")
+        ) {
+          // Generic Convex errors only if not caught above
+          msg = "Unable to connect. Please check your internet and try again.";
         } else {
           msg = "Authentication failed. Please try again.";
         }

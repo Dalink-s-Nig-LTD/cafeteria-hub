@@ -1,11 +1,11 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
-// Generate a secure 6-character alphanumeric code
+// Generate a secure 4-character alphanumeric code
 function generateCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Exclude similar chars (0/O, 1/I/l)
   let code = '';
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 4; i++) {
     // Use crypto-secure random if available
     const randomIndex = Math.floor(Math.random() * chars.length);
     code += chars[randomIndex];
