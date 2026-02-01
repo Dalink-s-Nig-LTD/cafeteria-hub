@@ -1,19 +1,60 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { ShoppingCart, Plus, Minus, Trash2, Receipt, CreditCard, Banknote, Smartphone } from 'lucide-react';
-import { useCart } from '@/contexts/CartContext';
-import { ReceiptModal } from './ReceiptModal';
-import { Order } from '@/types/cafeteria';
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import {
+  ShoppingCart,
+  Plus,
+  Minus,
+  Trash2,
+  Receipt,
+  CreditCard,
+  Banknote,
+  Smartphone,
+} from "lucide-react";
+import { useCart } from "@/contexts/CartContext";
+import { ReceiptModal } from "./ReceiptModal";
+import { Order } from "@/types/cafeteria";
 
 export function Cart() {
-  const { items, total, itemCount, updateQuantity, removeItem, clearCart, completeOrder } = useCart();
+  const {
+    items,
+    total,
+    itemCount,
+    updateQuantity,
+    removeItem,
+    clearCart,
+    completeOrder,
+    addItem,
+  } = useCart();
   const [showReceipt, setShowReceipt] = useState(false);
   const [lastOrder, setLastOrder] = useState<Order | null>(null);
 
-  const handlePayment = (method: 'cash' | 'card' | 'transfer') => {
+  // State for custom entry
+  const [customCategory, setCustomCategory] = useState<"food" | "drinks" | "">(
+    "",
+  );
+  const [customAmount, setCustomAmount] = useState("");
+  const [customName, setCustomName] = useState("");
+
+  const handleAddCustom = () => {
+    if (!customCategory || !customAmount || isNaN(Number(customAmount))) return;
+    addItem({
+      id: `custom-${Date.now()}`,
+      name:
+        customName ||
+        (customCategory === "food" ? "Custom Food" : "Custom Drink"),
+      price: Number(customAmount),
+      category: customCategory,
+      available: true,
+    });
+    setCustomAmount("");
+    setCustomName("");
+    setCustomCategory("");
+  };
+
+  const handlePayment = (method: "cash" | "card" | "transfer") => {
     const order = completeOrder(method);
     setLastOrder(order);
     setShowReceipt(true);
@@ -21,7 +62,10 @@ export function Cart() {
 
   return (
     <>
-      <Card className="h-full flex flex-col border-border shadow-card">
+      <Card
+        className="h-full flex flex-col border-border shadow-card bg-white"
+        style={{ minWidth: 340, maxWidth: 400, margin: "0 auto" }}
+      >
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-lg font-display">
             <ShoppingCart className="w-5 h-5 text-primary" />
@@ -35,6 +79,42 @@ export function Cart() {
         </CardHeader>
 
         <CardContent className="flex-1 flex flex-col p-4 pt-0">
+          {/* Custom Amount Entry */}
+          <div className="mb-4 p-3 border rounded-lg bg-secondary/30">
+            <div className="mb-2 font-semibold">Add Custom Item</div>
+            <div className="flex gap-2 mb-2">
+              <select
+                value={customCategory}
+                onChange={(e) =>
+                  setCustomCategory(e.target.value as "food" | "drinks" | "")
+                }
+                className="border rounded px-2 py-1"
+              >
+                <option value="">Select Category</option>
+                <option value="food">Food (Custom)</option>
+                <option value="drinks">Drinks (Custom)</option>
+              </select>
+              <input
+                type="number"
+                placeholder="Price"
+                value={customAmount}
+                onChange={(e) => setCustomAmount(e.target.value)}
+                className="border rounded px-2 py-1 w-24"
+                min="0"
+              />
+              <Button
+                size="sm"
+                onClick={handleAddCustom}
+                disabled={!customCategory || !customAmount}
+              >
+                Add
+              </Button>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              You can add custom food or drink amounts for quick entry.
+            </div>
+          </div>
+          {/* ...existing code... */}
           {items.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
               <ShoppingCart className="w-12 h-12 mb-3 opacity-50" />
@@ -54,6 +134,7 @@ export function Cart() {
                         <p className="font-medium text-sm text-foreground truncate">
                           {item.name}
                         </p>
+                        {/* Only show the total amount for this item */}
                         <p className="text-sm text-primary font-semibold">
                           ₦{(item.price * item.quantity).toLocaleString()}
                         </p>
@@ -64,20 +145,24 @@ export function Cart() {
                           variant="outline"
                           size="icon"
                           className="w-7 h-7"
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          onClick={() =>
+                            updateQuantity(item.id, item.quantity - 1)
+                          }
                         >
                           <Minus className="w-3 h-3" />
                         </Button>
-                        
+
                         <span className="w-6 text-center font-semibold text-sm">
                           {item.quantity}
                         </span>
-                        
+
                         <Button
                           variant="outline"
                           size="icon"
                           className="w-7 h-7"
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          onClick={() =>
+                            updateQuantity(item.id, item.quantity + 1)
+                          }
                         >
                           <Plus className="w-3 h-3" />
                         </Button>
@@ -99,7 +184,9 @@ export function Cart() {
               <div className="mt-4 pt-4 border-t border-border">
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span className="font-semibold">₦{total.toLocaleString()}</span>
+                  <span className="font-semibold">
+                    ₦{total.toLocaleString()}
+                  </span>
                 </div>
 
                 <Separator className="my-3" />
@@ -114,21 +201,21 @@ export function Cart() {
                 <div className="space-y-2">
                   <div className="grid grid-cols-3 gap-2">
                     <Button
-                      onClick={() => handlePayment('cash')}
+                      onClick={() => handlePayment("cash")}
                       className="flex-col h-auto py-3 bg-success hover:bg-success/90"
                     >
                       <Banknote className="w-5 h-5 mb-1" />
                       <span className="text-xs">Cash</span>
                     </Button>
                     <Button
-                      onClick={() => handlePayment('card')}
+                      onClick={() => handlePayment("card")}
                       className="flex-col h-auto py-3"
                     >
                       <CreditCard className="w-5 h-5 mb-1" />
                       <span className="text-xs">Card</span>
                     </Button>
                     <Button
-                      onClick={() => handlePayment('transfer')}
+                      onClick={() => handlePayment("transfer")}
                       variant="secondary"
                       className="flex-col h-auto py-3"
                     >

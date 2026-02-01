@@ -4,6 +4,8 @@ import { api } from "../../../convex/_generated/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import {
   Select,
   SelectContent,
@@ -67,6 +69,8 @@ const reportOptions: ReportOption[] = [
 
 export function ExportReports() {
   const ordersStats = useQuery(api.orders.getOrdersStats);
+  const allOrders = useQuery(api.orders.getAllOrders);
+  const menuItems = useQuery(api.menuItems.getAllMenuItems);
   const [selectedReport, setSelectedReport] = useState<ReportType>("sales");
   const [exportFormat, setExportFormat] = useState<ExportFormat>("pdf");
   const [dateRange, setDateRange] = useState<{
@@ -79,16 +83,255 @@ export function ExportReports() {
   const [isExporting, setIsExporting] = useState(false);
   const { toast } = useToast();
 
+  const generatePDFReport = () => {
+    const doc = new jsPDF() as any;
+    const pageWidth = doc.internal.pageSize.width;
+
+    // Title
+    doc.setFontSize(18);
+    doc.text("New Era Cafeteria", pageWidth / 2, 20, { align: "center" });
+
+    doc.setFontSize(14);
+    const reportTitle =
+      reportOptions.find((r) => r.id === selectedReport)?.name || "Report";
+    doc.text(reportTitle, pageWidth / 2, 30, { align: "center" });
+
+    doc.setFontSize(10);
+    const dateStr =
+      dateRange.from && dateRange.to
+        ? `${format(dateRange.from, "PP")} - ${format(dateRange.to, "PP")}`
+        : `Generated: ${format(new Date(), "PPP")}`;
+    doc.text(dateStr, pageWidth / 2, 38, { align: "center" });
+
+    let startY = 48;
+
+    if (selectedReport === "sales" && allOrders) {
+      const filteredOrders =
+        dateRange.from && dateRange.to
+          ? allOrders.filter((order) => {
+              const orderDate = new Date(order.createdAt);
+              return orderDate >= dateRange.from! && orderDate <= dateRange.to!;
+            })
+          : allOrders;
+
+      const tableData = filteredOrders.map((order) => {
+        const orderDate = new Date(order.createdAt);
+        return [
+          format(orderDate, "MM/dd/yyyy HH:mm"),
+          order.paymentMethod,
+          `N${order.total.toLocaleString()}`,
+        ];
+      });
+
+      const totalRevenue = filteredOrders.reduce(
+        (sum, order) => sum + order.total,
+        0,
+      );
+
+      autoTable(doc, {
+        startY: startY,
+        head: [["Date & Time", "Payment Method", "Amount"]],
+        body: tableData,
+        foot: [["", "Total Revenue:", `N${totalRevenue.toLocaleString()}`]],
+        theme: "grid",
+        headStyles: {
+          fillColor: [66, 139, 202],
+          fontStyle: "bold",
+          fontSize: 11,
+          textColor: [255, 255, 255],
+        },
+        footStyles: {
+          fillColor: [240, 240, 240],
+          fontStyle: "bold",
+          fontSize: 11,
+          textColor: [0, 0, 0],
+        },
+        styles: {
+          fontSize: 11,
+          cellPadding: 3,
+          textColor: [0, 0, 0],
+          lineColor: [0, 0, 0],
+          lineWidth: 0.3,
+        },
+        columnStyles: {
+          0: { cellWidth: 50 },
+          1: { cellWidth: 40 },
+          2: { cellWidth: 40, halign: "right" },
+        },
+      });
+    } else if (selectedReport === "orders" && allOrders) {
+      const filteredOrders =
+        dateRange.from && dateRange.to
+          ? allOrders.filter((order) => {
+              const orderDate = new Date(order.createdAt);
+              return orderDate >= dateRange.from! && orderDate <= dateRange.to!;
+            })
+          : allOrders;
+
+      const tableData: any[] = [];
+      let grandTotal = 0;
+
+      filteredOrders.forEach((order, idx) => {
+        const orderDate = new Date(order.createdAt);
+        const orderHeader = `Order #${idx + 1} - ${format(orderDate, "MM/dd/yyyy HH:mm")} - ${order.paymentMethod}`;
+
+        tableData.push([
+          {
+            content: orderHeader,
+            colSpan: 4,
+            styles: { fontStyle: "bold", fillColor: [220, 220, 220] },
+          },
+        ]);
+
+        order.items.forEach((item) => {
+          const itemTotal = item.price * item.quantity;
+          tableData.push([
+            item.name,
+            item.quantity.toString(),
+            `N${item.price.toLocaleString()}`,
+            `N${itemTotal.toLocaleString()}`,
+          ]);
+        });
+
+        tableData.push([
+          {
+            content: "Order Total:",
+            colSpan: 3,
+            styles: { fontStyle: "bold", halign: "right" },
+          },
+          {
+            content: `N${order.total.toLocaleString()}`,
+            styles: { fontStyle: "bold" },
+          },
+        ]);
+
+        grandTotal += order.total;
+
+        if (idx < filteredOrders.length - 1) {
+          tableData.push([
+            { content: "", colSpan: 4, styles: { minCellHeight: 2 } },
+          ]);
+        }
+      });
+
+      autoTable(doc, {
+        startY: startY,
+        head: [["Item", "Qty", "Price", "Total"]],
+        body: tableData,
+        foot: [["", "", "Grand Total:", `N${grandTotal.toLocaleString()}`]],
+        theme: "grid",
+        headStyles: {
+          fillColor: [66, 139, 202],
+          fontStyle: "bold",
+          fontSize: 11,
+          textColor: [255, 255, 255],
+        },
+        footStyles: {
+          fillColor: [240, 240, 240],
+          fontStyle: "bold",
+          fontSize: 11,
+          textColor: [0, 0, 0],
+        },
+        styles: {
+          fontSize: 10,
+          cellPadding: 2,
+          textColor: [0, 0, 0],
+          lineColor: [0, 0, 0],
+          lineWidth: 0.3,
+        },
+        columnStyles: {
+          0: { cellWidth: 70 },
+          1: { cellWidth: 20, halign: "center" },
+          2: { cellWidth: 40, halign: "right" },
+          3: { cellWidth: 40, halign: "right" },
+        },
+      });
+    } else if (selectedReport === "inventory" && menuItems) {
+      const tableData = menuItems.map((item) => [
+        item.name,
+        item.category,
+        `N${item.price.toLocaleString()}`,
+        item.available ? "Available" : "Out of Stock",
+      ]);
+
+      const totalValue = menuItems.reduce((sum, item) => sum + item.price, 0);
+      const availableCount = menuItems.filter((i) => i.available).length;
+
+      autoTable(doc, {
+        startY: startY,
+        head: [["Item Name", "Category", "Price", "Status"]],
+        body: tableData,
+        foot: [
+          ["", "", "", ""],
+          [
+            `Total Items: ${menuItems.length}`,
+            `Available: ${availableCount}`,
+            "Total Value:",
+            `N${totalValue.toLocaleString()}`,
+          ],
+        ],
+        theme: "grid",
+        headStyles: {
+          fillColor: [66, 139, 202],
+          fontStyle: "bold",
+          fontSize: 11,
+          textColor: [255, 255, 255],
+        },
+        footStyles: {
+          fillColor: [240, 240, 240],
+          fontStyle: "bold",
+          fontSize: 11,
+          textColor: [0, 0, 0],
+        },
+        styles: {
+          fontSize: 10,
+          cellPadding: 3,
+          textColor: [0, 0, 0],
+          lineColor: [0, 0, 0],
+          lineWidth: 0.3,
+        },
+        columnStyles: {
+          0: { cellWidth: 60 },
+          1: { cellWidth: 40 },
+          2: { cellWidth: 35, halign: "right" },
+          3: { cellWidth: 35, halign: "center" },
+        },
+      });
+    } else {
+      doc.setFontSize(10);
+      doc.text("No data available for this report type.", 15, startY);
+    }
+
+    const fileName = `${selectedReport}_report_${format(new Date(), "yyyy-MM-dd")}.pdf`;
+    doc.save(fileName);
+  };
+
   const handleExport = async () => {
     setIsExporting(true);
 
-    // Simulate export delay
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    toast({
-      title: "Report Generated",
-      description: `Your ${selectedReport} report has been downloaded as ${exportFormat.toUpperCase()}`,
-    });
+    try {
+      if (exportFormat === "pdf") {
+        generatePDFReport();
+        toast({
+          title: "Report Downloaded",
+          description: `Your ${selectedReport} report has been downloaded as PDF`,
+        });
+      } else {
+        // For CSV/Excel, show not implemented message
+        toast({
+          title: "Format Not Available",
+          description: `${exportFormat.toUpperCase()} export is coming soon. Please use PDF format.`,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description:
+          "There was an error generating the report. Please try again.",
+        variant: "destructive",
+      });
+    }
 
     setIsExporting(false);
   };
@@ -268,7 +511,6 @@ export function ExportReports() {
           </Button>
         </CardContent>
       </Card>
-
     </div>
   );
 }

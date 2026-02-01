@@ -49,6 +49,19 @@ export const getRecentOrders = query({
   },
 });
 
+// Get all orders (for admin reports)
+export const getAllOrders = query({
+  handler: async (ctx) => {
+    const orders = await ctx.db
+      .query("orders")
+      .withIndex("by_createdAt")
+      .order("desc")
+      .collect();
+    
+    return orders;
+  },
+});
+
 // Get orders statistics
 export const getOrdersStats = query({
   handler: async (ctx) => {

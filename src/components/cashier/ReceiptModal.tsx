@@ -1,10 +1,18 @@
 import React, { useRef } from "react";
-// Helper to format order ID as 'New Era- 0000A01'
-function formatOrderId(id: string) {
-  // Use last 5-7 chars, pad with zeros, prefix
-  const clean = id.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
-  const short = clean.slice(-6);
-  return `New Era- ${short.padStart(7, "0")}`;
+// Helper to format order number as 'DD-MM-00001' (increments per day)
+function formatOrderNumber(order: Order) {
+  // If order.id is already in the format, use it; else fallback
+  if (/^\d{2}-\d{2}-\d{5}$/.test(order.id)) return order.id;
+  // Fallback: generate from timestamp and id
+  const date =
+    order.timestamp instanceof Date
+      ? order.timestamp
+      : new Date(order.timestamp);
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  // Extract last 5 digits from id (numeric part)
+  const num = order.id.replace(/\D/g, "").slice(-5).padStart(5, "0");
+  return `${day}-${month}-${num}`;
 }
 
 import {
@@ -60,7 +68,6 @@ const POSReceipt = ({
     0,
   );
   if (items.length === 0) return null;
-
   return (
     <div
       className="pos-receipt"
@@ -79,18 +86,13 @@ const POSReceipt = ({
     >
       {/* Header: Name and Location */}
       <div
-        style={{
-          textAlign: "center",
-          fontWeight: "bold",
-          fontSize: "14px",
-          marginBottom: "4px",
-          lineHeight: "1.2",
-        }}
+        style={{ textAlign: "center", marginBottom: "4px", lineHeight: "1.2" }}
       >
-        <div>New Era Cafeteria</div>
-        <div style={{ fontSize: "12px" }}>Redeemer's University</div>
-        <div style={{ fontWeight: "normal", fontSize: "10px" }}>
-          Main Campus, Ede
+        <div style={{ fontWeight: "900", fontSize: "15px", letterSpacing: 1 }}>
+          New Era Cafeteria
+        </div>
+        <div style={{ fontSize: "12px", marginTop: 2 }}>
+          Redeemer's University, Ede, Osun State, Nigeria
         </div>
       </div>
 
@@ -99,8 +101,8 @@ const POSReceipt = ({
       {/* Order Details */}
       <div style={{ fontSize: "10px", marginBottom: "4px" }}>
         <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <span>Order ID:</span>
-          <span style={{ fontWeight: "600" }}>{formatOrderId(order.id)}</span>
+          <span>Order No:</span>
+          <span style={{ fontWeight: "600" }}>{formatOrderNumber(order)}</span>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <span>Date:</span>

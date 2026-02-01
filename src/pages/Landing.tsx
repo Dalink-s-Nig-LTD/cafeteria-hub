@@ -5,8 +5,7 @@ import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { UserPlus } from "lucide-react";
-import ruLogo from "@/assets/ru-logo.jpg";
-import watermark from "@/assets/watermark.png";
+import logo from "@/assets/logo.png";
 
 interface LandingProps {
   onLogin: () => void;
@@ -23,11 +22,15 @@ export function Landing({ onLogin }: LandingProps) {
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-4 sm:p-8">
         {/* Logo & Title */}
         <div className="text-center mb-6 sm:mb-8 animate-fade-in">
-          <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-4 sm:mb-6 rounded-full overflow-hidden border-4 border-primary/20 shadow-xl">
+          <div
+            className="mx-auto mb-4 sm:mb-6 bg-white border-4 border-primary/20 shadow-xl flex items-center justify-center"
+            style={{ width: 120, height: 120 }}
+          >
             <img
-              src={ruLogo}
-              alt="Redeemers University Logo"
-              className="w-full h-full object-cover"
+              src={logo}
+              alt="New Era Cafeteria Logo"
+              className="max-w-full max-h-full"
+              style={{ width: "100%", height: "100%", objectFit: "contain" }}
             />
           </div>
 

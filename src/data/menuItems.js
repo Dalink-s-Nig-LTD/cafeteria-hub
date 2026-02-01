@@ -1,7 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.categories = exports.menuItems = void 0;
-exports.menuItems = [
+export const menuItems = [
     // Rice Dishes
     { id: '1', name: 'Jollof Rice', price: 800, category: 'Rice', available: true },
     { id: '2', name: 'Fried Rice', price: 900, category: 'Rice', available: true },
@@ -33,4 +30,4 @@ exports.menuItems = [
     { id: '23', name: 'Sausage Roll', price: 350, category: 'Snacks', available: true },
     { id: '24', name: 'Doughnut', price: 250, category: 'Snacks', available: true },
 ];
-exports.categories = ['All', 'Rice', 'Protein', 'Swallow', 'Soup', 'Drinks', 'Snacks'];
+export const categories = ['All', 'Rice', 'Protein', 'Swallow', 'Soup', 'Drinks', 'Snacks'];

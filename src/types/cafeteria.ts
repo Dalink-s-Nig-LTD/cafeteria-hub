@@ -1,3 +1,7 @@
+// CustomCartItem type for custom entries
+export interface CustomCartItem extends CartItem {
+  isCustom?: true;
+}
 export interface MenuItem {
   id: string;
   name: string;

@@ -8,15 +8,44 @@ import { useCart } from "@/contexts/CartContext";
 import { MenuItem } from "@/types/cafeteria";
 
 export function MenuGrid() {
+  const [selectedMenuType, setSelectedMenuType] = useState<"food" | "drinks">(
+    "food",
+  );
   const [selectedCategory, setSelectedCategory] = useState("All");
   const { addItem } = useCart();
   const items = useQuery(api.menuItems.getAllMenuItems);
   const categories = useQuery(api.menuItems.getCategories);
 
+  // Map categories to menu types
+  const foodCategories = ["Rice", "Protein", "Swallow", "Soup", "Snacks"];
+  const drinkCategories = ["Drinks"];
+
+  // Filter items by menu type (food or drinks)
+  const itemsByType =
+    items?.filter((item) => {
+      if (selectedMenuType === "food") {
+        return foodCategories.includes(item.category);
+      } else {
+        return drinkCategories.includes(item.category);
+      }
+    }) || [];
+
+  // Further filter by selected category
   const filteredItems =
-    items && selectedCategory === "All"
-      ? items
-      : items?.filter((item) => item.category === selectedCategory) || [];
+    selectedCategory === "All"
+      ? itemsByType
+      : itemsByType.filter((item) => item.category === selectedCategory);
+
+  // Get categories for the selected menu type
+  const relevantCategories =
+    categories?.filter((cat) => {
+      if (cat === "All") return true;
+      if (selectedMenuType === "food") {
+        return foodCategories.includes(cat);
+      } else {
+        return drinkCategories.includes(cat);
+      }
+    }) || [];
 
   const handleAddItem = (item: MenuItem) => {
     if (!item.available) return;
@@ -33,9 +62,32 @@ export function MenuGrid() {
 
   return (
     <div className="flex-1 flex flex-col h-full">
+      {/* Menu Type Switch */}
+      <div className="flex gap-2 mb-2">
+        <Button
+          variant={selectedMenuType === "food" ? "default" : "outline"}
+          size="sm"
+          onClick={() => {
+            setSelectedMenuType("food");
+            setSelectedCategory("All");
+          }}
+        >
+          Food Menu
+        </Button>
+        <Button
+          variant={selectedMenuType === "drinks" ? "default" : "outline"}
+          size="sm"
+          onClick={() => {
+            setSelectedMenuType("drinks");
+            setSelectedCategory("All");
+          }}
+        >
+          Drinks Menu
+        </Button>
+      </div>
       {/* Category Filter */}
       <div className="flex gap-2 mb-4 sm:mb-6 overflow-x-auto pb-2 scrollbar-hide">
-        {categories.map((category: string) => (
+        {relevantCategories.map((category: string) => (
           <Button
             key={category}
             variant={selectedCategory === category ? "default" : "outline"}
@@ -54,13 +106,21 @@ export function MenuGrid() {
           </Button>
         ))}
       </div>
-
       {/* Menu Items Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 overflow-y-auto pb-4 scrollbar-hide">
-        {filteredItems.map((item: any) => (
+        {filteredItems.map((item) => (
           <Card
-            key={item._id || item.id}
-            onClick={() => handleAddItem(item)}
+            key={item._id}
+            onClick={() =>
+              handleAddItem({
+                id: String(item._id),
+                name: item.name,
+                price: item.price,
+                category: item.category,
+                image: item.image,
+                available: item.available,
+              })
+            }
             className={`
               group relative overflow-hidden cursor-pointer transition-all duration-200
               border border-border hover:border-primary/30
@@ -93,8 +153,8 @@ export function MenuGrid() {
               </div>
 
               {item.available && (
-                <div className="absolute top-2 right-2 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Plus className="w-4 h-4 text-primary-foreground" />
+                <div className="absolute bottom-2 right-2 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-primary flex items-center justify-center shadow-md hover:shadow-lg hover:scale-110 transition-all">
+                  <Plus className="w-5 h-5 text-primary-foreground" />
                 </div>
               )}
             </CardContent>
