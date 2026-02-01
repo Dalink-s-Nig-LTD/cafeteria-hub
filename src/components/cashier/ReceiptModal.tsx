@@ -78,10 +78,20 @@ const POSReceipt = ({
       }}
     >
       {/* Header: Name and Location */}
-      <div style={{ textAlign: "center", fontWeight: "bold", fontSize: "14px", marginBottom: "4px", lineHeight: "1.2" }}>
+      <div
+        style={{
+          textAlign: "center",
+          fontWeight: "bold",
+          fontSize: "14px",
+          marginBottom: "4px",
+          lineHeight: "1.2",
+        }}
+      >
         <div>New Era Cafeteria</div>
         <div style={{ fontSize: "12px" }}>Redeemer's University</div>
-        <div style={{ fontWeight: "normal", fontSize: "10px" }}>Main Campus, Ede</div>
+        <div style={{ fontWeight: "normal", fontSize: "10px" }}>
+          Main Campus, Ede
+        </div>
       </div>
 
       <div style={{ borderTop: "1px dashed #000", margin: "4px 0" }}></div>
@@ -98,7 +108,9 @@ const POSReceipt = ({
         </div>
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <span>Payment:</span>
-          <span style={{ textTransform: "capitalize" }}>{order.paymentMethod}</span>
+          <span style={{ textTransform: "capitalize" }}>
+            {order.paymentMethod}
+          </span>
         </div>
       </div>
 
@@ -107,11 +119,25 @@ const POSReceipt = ({
       {/* Items */}
       <div style={{ marginBottom: "4px" }}>
         {items.map((item, idx) => (
-          <div key={idx} style={{ display: "flex", justifyContent: "space-between", marginBottom: "2px", fontSize: "11px" }}>
+          <div
+            key={idx}
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginBottom: "2px",
+              fontSize: "11px",
+            }}
+          >
             <span style={{ flex: 1 }}>
               {item.quantity}x {item.name}
             </span>
-            <span style={{ marginLeft: "8px", textAlign: "right", fontWeight: "500" }}>
+            <span
+              style={{
+                marginLeft: "8px",
+                textAlign: "right",
+                fontWeight: "500",
+              }}
+            >
               ₦{(item.price * item.quantity).toLocaleString()}
             </span>
           </div>
@@ -121,7 +147,15 @@ const POSReceipt = ({
       <div style={{ borderTop: "1px dashed #000", margin: "4px 0" }}></div>
 
       {/* Total */}
-      <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", fontSize: "13px", marginBottom: "8px" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          fontWeight: "bold",
+          fontSize: "13px",
+          marginBottom: "8px",
+        }}
+      >
         <span>TOTAL</span>
         <span>₦{total.toLocaleString()}</span>
       </div>
@@ -241,13 +275,19 @@ export function ReceiptModal({ order, isOpen, onClose }: ReceiptModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+      <DialogContent
+        className="max-w-md max-h-[80vh] overflow-y-auto"
+        aria-describedby="receipt-modal-desc"
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-success">
             <CheckCircle className="w-5 h-5" />
             Order Complete
           </DialogTitle>
         </DialogHeader>
+        <span id="receipt-modal-desc" style={{ display: "none" }}>
+          Receipt details and print options for the completed order.
+        </span>
 
         <div ref={receiptRef} className="space-y-4">
           {food.length > 0 && <POSReceipt order={order} type="food" />}
