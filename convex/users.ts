@@ -1,41 +1,18 @@
 import { query, mutation } from "./_generated/server";
-import * as auth from "./auth";
 import { v } from "convex/values";
-// Users system - not currently used with simple access code auth
 
-// Get current authenticated user with their role
-export const getCurrentUser = query({
-  args: {},
-  handler: async (ctx) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) return null;
-    
-    const user = await ctx.db.get(userId);
-    if (!user) return null;
-    
-    // Get user's role
-    const userRole = await ctx.db
-      .query("userRoles")
-      .withIndex("by_userId", (q) => q.eq("userId", userId))
-      .first();
-    
-    return {
-      ...user,
-      role: userRole?.role ?? null,
-    };
-  },
-});
+// Users system - simplified for access code auth
 
-// Get user by ID
-export const getUser = query({
-  args: { userId: v.id("users") },
+// Get admin user by ID
+export const getAdminUser = query({
+  args: { adminUserId: v.id("adminUsers") },
   handler: async (ctx, args) => {
-    const user = await ctx.db.get(args.userId);
+    const user = await ctx.db.get(args.adminUserId);
     if (!user) return null;
     
     const userRole = await ctx.db
       .query("userRoles")
-      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .filter((q) => q.eq(q.field("userId"), args.adminUserId as any))
       .first();
     
     return {
@@ -45,17 +22,16 @@ export const getUser = query({
   },
 });
 
-// Get all users with roles (for admin management)
-export const getAllUsers = query({
+// Get all admin users with roles
+export const getAllAdminUsers = query({
   args: {},
   handler: async (ctx) => {
-    // Return all users with their roles (no auth check)
-    const users = await ctx.db.query("users").collect();
+    const users = await ctx.db.query("adminUsers").collect();
     const usersWithRoles = await Promise.all(
       users.map(async (user) => {
         const role = await ctx.db
           .query("userRoles")
-          .withIndex("by_userId", (q) => q.eq("userId", user._id))
+          .filter((q) => q.eq(q.field("userId"), user._id as any))
           .first();
         return {
           ...user,
@@ -67,16 +43,14 @@ export const getAllUsers = query({
   },
 });
 
-// Update user profile
-export const updateProfile = mutation({
+// Update admin user profile
+export const updateAdminProfile = mutation({
   args: {
+    adminUserId: v.id("adminUsers"),
     name: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
-    
-    await ctx.db.patch(userId, {
+    await ctx.db.patch(args.adminUserId, {
       name: args.name,
     });
     

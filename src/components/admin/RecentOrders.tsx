@@ -93,9 +93,9 @@ export function RecentOrders() {
                   </div>
 
                   <div className="space-y-1 mb-3">
-                    {order.items.map((item) => (
+                    {order.items.map((item, idx) => (
                       <p
-                        key={item.id}
+                        key={`${item.menuItemId}-${idx}`}
                         className="text-xs text-muted-foreground"
                       >
                         {item.quantity}x {item.name}

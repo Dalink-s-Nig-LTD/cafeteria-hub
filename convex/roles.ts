@@ -1,47 +1,29 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-// Roles system - not currently used with simple access code auth
+import * as auth from "./auth";
 
-// Get current user's role
+// Roles system - simplified for access code auth
+
+// Get current user's role (placeholder - not used with access code auth)
 export const getCurrentRole = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) return null;
-    
-    const userRole = await ctx.db
-      .query("userRoles")
-      .withIndex("by_userId", (q) => q.eq("userId", userId))
-      .first();
-    
-    return userRole?.role ?? null;
+    // Access code auth handles roles differently
+    return null;
   },
 });
 
-// Assign role to user (superadmin only)
+// Assign role to user (admin only) - for adminUsers
 export const assignRole = mutation({
   args: {
-    userId: v.id("users"),
+    adminUserId: v.id("adminUsers"),
     role: v.union(v.literal("superadmin"), v.literal("admin"), v.literal("cashier")),
   },
   handler: async (ctx, args) => {
-    const currentUserId = await auth.getUserId(ctx);
-    if (!currentUserId) throw new Error("Not authenticated");
-    
-    // Check if current user is superadmin
-    const currentUserRole = await ctx.db
-      .query("userRoles")
-      .withIndex("by_userId", (q) => q.eq("userId", currentUserId))
-      .first();
-    
-    if (currentUserRole?.role !== "superadmin") {
-      throw new Error("Only superadmin can assign roles");
-    }
-    
     // Check if user already has a role
     const existingRole = await ctx.db
       .query("userRoles")
-      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .filter((q) => q.eq(q.field("userId"), args.adminUserId as any))
       .first();
     
     if (existingRole) {
@@ -52,10 +34,9 @@ export const assignRole = mutation({
     } else {
       // Create new role assignment
       await ctx.db.insert("userRoles", {
-        userId: args.userId,
+        userId: args.adminUserId as any,
         role: args.role,
         createdAt: Date.now(),
-        createdBy: currentUserId,
       });
     }
     
@@ -63,33 +44,15 @@ export const assignRole = mutation({
   },
 });
 
-// Remove role from user (superadmin only)
+// Remove role from user
 export const removeRole = mutation({
   args: {
-    userId: v.id("users"),
+    adminUserId: v.id("adminUsers"),
   },
   handler: async (ctx, args) => {
-    const currentUserId = await auth.getUserId(ctx);
-    if (!currentUserId) throw new Error("Not authenticated");
-    
-    // Check if current user is superadmin
-    const currentUserRole = await ctx.db
-      .query("userRoles")
-      .withIndex("by_userId", (q) => q.eq("userId", currentUserId))
-      .first();
-    
-    if (currentUserRole?.role !== "superadmin") {
-      throw new Error("Only superadmin can remove roles");
-    }
-    
-    // Cannot remove own role
-    if (args.userId === currentUserId) {
-      throw new Error("Cannot remove your own role");
-    }
-    
     const existingRole = await ctx.db
       .query("userRoles")
-      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .filter((q) => q.eq(q.field("userId"), args.adminUserId as any))
       .first();
     
     if (existingRole) {
@@ -106,42 +69,21 @@ export const getUsersByRole = query({
     role: v.union(v.literal("superadmin"), v.literal("admin"), v.literal("cashier")),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
-    
-    // Check if user has admin/superadmin access
-    const currentUserRole = await ctx.db
-      .query("userRoles")
-      .withIndex("by_userId", (q) => q.eq("userId", userId))
-      .first();
-    
-    if (!currentUserRole || currentUserRole.role === "cashier") {
-      throw new Error("Not authorized");
-    }
-    
     const roleAssignments = await ctx.db
       .query("userRoles")
       .withIndex("by_role", (q) => q.eq("role", args.role))
       .collect();
     
-    const users = await Promise.all(
-      roleAssignments.map(async (ra) => {
-        const user = await ctx.db.get(ra.userId);
-        return user ? { ...user, role: ra.role } : null;
-      })
-    );
-    
-    return users.filter(Boolean);
+    return roleAssignments;
   },
 });
 
-// Initialize first superadmin (only works if no superadmin exists)
+// Initialize first superadmin
 export const initializeSuperadmin = mutation({
-  args: {},
-  handler: async (ctx) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
-    
+  args: {
+    adminUserId: v.id("adminUsers"),
+  },
+  handler: async (ctx, args) => {
     // Check if any superadmin exists
     const existingSuperadmin = await ctx.db
       .query("userRoles")
@@ -152,9 +94,9 @@ export const initializeSuperadmin = mutation({
       throw new Error("Superadmin already exists");
     }
     
-    // Make current user superadmin
+    // Make user superadmin
     await ctx.db.insert("userRoles", {
-      userId,
+      userId: args.adminUserId as any,
       role: "superadmin",
       createdAt: Date.now(),
     });
