@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff } from "lucide-react";
 import ruLogo from "@/assets/ru-logo.jpg";
+import logo from "@/assets/logo.png";
 
 type AuthMode = "signin" | "signup";
 
@@ -26,6 +27,25 @@ export function Auth() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [name, setName] = useState("");
+  const [passwordStrength, setPasswordStrength] = useState<string>("");
+
+  // Password strength checker
+  const checkPasswordStrength = (pwd: string) => {
+    if (pwd.length === 0) {
+      setPasswordStrength("");
+      return;
+    }
+
+    let strength = 0;
+    if (pwd.length >= 8) strength++;
+    if (/[A-Z]/.test(pwd)) strength++;
+    if (/[a-z]/.test(pwd)) strength++;
+    if (/[0-9]/.test(pwd)) strength++;
+    if (/[^A-Za-z0-9]/.test(pwd)) strength++;
+
+    const labels = ["Very Weak", "Weak", "Fair", "Good", "Strong"];
+    setPasswordStrength(labels[strength - 1] || "Very Weak");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,8 +69,9 @@ export function Auth() {
 
         // Store session info
         localStorage.setItem("sessionId", result.sessionId);
-        localStorage.setItem("userRole", "admin");
+        localStorage.setItem("userRole", result.user.role);
         localStorage.setItem("userName", result.user.name);
+        localStorage.setItem("sessionCreated", Date.now().toString());
       } else {
         const result = await signInMutation({
           email,
@@ -59,8 +80,9 @@ export function Auth() {
 
         // Store session info
         localStorage.setItem("sessionId", result.sessionId);
-        localStorage.setItem("userRole", "admin");
+        localStorage.setItem("userRole", result.user.role);
         localStorage.setItem("userName", result.user.name);
+        localStorage.setItem("sessionCreated", Date.now().toString());
       }
 
       navigate("/");
@@ -160,9 +182,14 @@ export function Auth() {
                     id="password"
                     type={showPassword ? "text" : "password"}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (mode === "signup")
+                        checkPasswordStrength(e.target.value);
+                    }}
                     className="h-12 bg-[#f5f5f7] border-0 rounded-lg pr-12 focus-visible:ring-1 focus-visible:ring-primary"
                     required
+                    minLength={8}
                   />
                   <button
                     type="button"
@@ -176,6 +203,26 @@ export function Auth() {
                     )}
                   </button>
                 </div>
+                {mode === "signup" && passwordStrength && (
+                  <p
+                    className={`text-xs ${
+                      passwordStrength === "Strong"
+                        ? "text-green-600"
+                        : passwordStrength === "Good"
+                          ? "text-blue-600"
+                          : passwordStrength === "Fair"
+                            ? "text-yellow-600"
+                            : "text-red-600"
+                    }`}
+                  >
+                    Password strength: {passwordStrength}
+                  </p>
+                )}
+                {mode === "signup" && (
+                  <p className="text-xs text-muted-foreground">
+                    Must be 8+ characters with uppercase, lowercase, and number
+                  </p>
+                )}
               </div>
 
               {mode === "signup" && (
@@ -265,11 +312,11 @@ export function Auth() {
                 </div>
 
                 {/* Center logo */}
-                <div className="w-28 h-28 mx-auto rounded-full overflow-hidden border-4 border-white shadow-xl bg-white">
+                <div className="w-48 h-48 mx-auto flex items-center justify-center">
                   <img
-                    src={ruLogo}
-                    alt="Redeemers University Logo"
-                    className="w-full h-full object-cover"
+                    src={logo}
+                    alt="New Era Cafeteria Logo"
+                    className="w-full h-full object-contain"
                   />
                 </div>
               </div>

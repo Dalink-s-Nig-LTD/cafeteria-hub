@@ -1,16 +1,39 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import * as bcrypt from "bcryptjs";
 
-// Simple password hashing (for demo - in production use proper hashing)
-function hashPassword(password: string): string {
-  // Simple hash - in production, use bcrypt or similar
-  let hash = 0;
-  for (let i = 0; i < password.length; i++) {
-    const char = password.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
+// Password hashing with bcrypt
+async function hashPassword(password: string): Promise<string> {
+  const salt = await bcrypt.genSalt(10);
+  return bcrypt.hash(password, salt);
+}
+
+// Verify password
+async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  return bcrypt.compare(password, hash);
+}
+
+// Email validation
+function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+// Password complexity validation
+function isValidPassword(password: string): { valid: boolean; error?: string } {
+  if (password.length < 8) {
+    return { valid: false, error: "Password must be at least 8 characters" };
   }
-  return hash.toString(36);
+  if (!/[A-Z]/.test(password)) {
+    return { valid: false, error: "Password must contain at least one uppercase letter" };
+  }
+  if (!/[a-z]/.test(password)) {
+    return { valid: false, error: "Password must contain at least one lowercase letter" };
+  }
+  if (!/[0-9]/.test(password)) {
+    return { valid: false, error: "Password must contain at least one number" };
+  }
+  return { valid: true };
 }
 
 // Sign up new admin
@@ -21,6 +44,22 @@ export const signUp = mutation({
     name: v.string(),
   },
   handler: async (ctx, args) => {
+    // Validate email format
+    if (!isValidEmail(args.email)) {
+      throw new Error("Invalid email format");
+    }
+
+    // Validate password complexity
+    const passwordCheck = isValidPassword(args.password);
+    if (!passwordCheck.valid) {
+      throw new Error(passwordCheck.error || "Invalid password");
+    }
+
+    // Validate name
+    if (args.name.trim().length < 2 || args.name.length > 100) {
+      throw new Error("Name must be between 2 and 100 characters");
+    }
+
     // Check if email already exists
     const existing = await ctx.db
       .query("adminUsers")
@@ -31,11 +70,16 @@ export const signUp = mutation({
       throw new Error("Email already registered");
     }
 
+    // Check if this is the first user (make them superadmin)
+    const existingUsers = await ctx.db.query("adminUsers").collect();
+    const role = existingUsers.length === 0 ? "superadmin" : "manager";
+
     // Create admin user
     const userId = await ctx.db.insert("adminUsers", {
       email: args.email.toLowerCase(),
-      passwordHash: hashPassword(args.password),
-      name: args.name,
+      passwordHash: await hashPassword(args.password),
+      name: args.name.trim(),
+      role,
       createdAt: Date.now(),
     });
 
@@ -54,6 +98,7 @@ export const signUp = mutation({
       user: {
         email: args.email,
         name: args.name,
+        role,
       }
     };
   },
@@ -66,6 +111,11 @@ export const signIn = mutation({
     password: v.string(),
   },
   handler: async (ctx, args) => {
+    // Validate email format
+    if (!isValidEmail(args.email)) {
+      throw new Error("Invalid email format");
+    }
+
     // Find user
     const user = await ctx.db
       .query("adminUsers")
@@ -76,10 +126,34 @@ export const signIn = mutation({
       throw new Error("Wrong password or email");
     }
 
+    // Check if account is locked
+    if (user.lockedUntil && user.lockedUntil > Date.now()) {
+      const minutesLeft = Math.ceil((user.lockedUntil - Date.now()) / 60000);
+      throw new Error(`Account locked. Try again in ${minutesLeft} minutes`);
+    }
+
     // Verify password
-    const passwordHash = hashPassword(args.password);
-    if (user.passwordHash !== passwordHash) {
+    const isValid = await verifyPassword(args.password, user.passwordHash);
+    if (!isValid) {
+      // Increment failed attempts
+      const attempts = (user.failedLoginAttempts || 0) + 1;
+      const updates: { failedLoginAttempts: number; lockedUntil?: number } = { failedLoginAttempts: attempts };
+      
+      // Lock account after 5 failed attempts for 15 minutes
+      if (attempts >= 5) {
+        updates.lockedUntil = Date.now() + 15 * 60 * 1000;
+      }
+      
+      await ctx.db.patch(user._id, updates);
       throw new Error("Wrong password or email");
+    }
+
+    // Reset failed attempts on successful login
+    if (user.failedLoginAttempts || user.lockedUntil) {
+      await ctx.db.patch(user._id, { 
+        failedLoginAttempts: 0,
+        lockedUntil: undefined,
+      });
     }
 
     // Create session (expires in 24 hours)
@@ -97,6 +171,7 @@ export const signIn = mutation({
       user: {
         email: user.email,
         name: user.name,
+        role: user.role || "manager",
       }
     };
   },
@@ -124,7 +199,7 @@ export const getCurrentUser = query({
     return {
       email: user.email,
       name: user.name,
-      role: "admin" as const,
+      role: user.role || "manager",
     };
   },
 });
@@ -136,6 +211,142 @@ export const signOut = mutation({
   },
   handler: async (ctx, args) => {
     await ctx.db.delete(args.sessionId);
+    return { success: true };
+  },
+});
+
+// Get all admin users (superadmin only)
+export const getAllAdmins = query({
+  args: {},
+  handler: async (ctx) => {
+    const admins = await ctx.db.query("adminUsers").collect();
+    return admins.map((admin) => ({
+      _id: admin._id,
+      email: admin.email,
+      name: admin.name,
+      role: admin.role || "manager",
+      createdAt: admin.createdAt,
+    }));
+  },
+});
+
+// Create admin user (superadmin only)
+export const createAdmin = mutation({
+  args: {
+    email: v.string(),
+    password: v.string(),
+    name: v.string(),
+    role: v.union(
+      v.literal("superadmin"),
+      v.literal("manager"),
+      v.literal("vc")
+    ),
+    sessionId: v.id("sessions"),
+  },
+  handler: async (ctx, args) => {
+    // Verify requester is superadmin
+    const session = await ctx.db.get(args.sessionId);
+    if (!session || !session.userId) {
+      throw new Error("Unauthorized");
+    }
+
+    const requester = await ctx.db.get(session.userId);
+    if (!requester || requester.role !== "superadmin") {
+      throw new Error("Only superadmins can create admin users");
+    }
+
+    // Check if email already exists
+    const existing = await ctx.db
+      .query("adminUsers")
+      .withIndex("by_email", (q) => q.eq("email", args.email.toLowerCase()))
+      .first();
+
+    if (existing) {
+      throw new Error("Email already registered");
+    }
+
+    // Create admin user
+    const userId = await ctx.db.insert("adminUsers", {
+      email: args.email.toLowerCase(),
+      passwordHash: await hashPassword(args.password),
+      name: args.name.trim(),
+      role: args.role,
+      createdAt: Date.now(),
+      createdBy: requester._id,
+    });
+
+    return { success: true, userId };
+  },
+});
+
+// Update admin role (superadmin only)
+export const updateAdminRole = mutation({
+  args: {
+    adminId: v.id("adminUsers"),
+    role: v.union(
+      v.literal("superadmin"),
+      v.literal("manager"),
+      v.literal("vc")
+    ),
+    sessionId: v.id("sessions"),
+  },
+  handler: async (ctx, args) => {
+    // Verify requester is superadmin
+    const session = await ctx.db.get(args.sessionId);
+    if (!session || !session.userId) {
+      throw new Error("Unauthorized");
+    }
+
+    const requester = await ctx.db.get(session.userId);
+    if (!requester || requester.role !== "superadmin") {
+      throw new Error("Only superadmins can update roles");
+    }
+
+    // Don't allow changing own role
+    if (requester._id === args.adminId) {
+      throw new Error("Cannot change your own role");
+    }
+
+    await ctx.db.patch(args.adminId, { role: args.role });
+    return { success: true };
+  },
+});
+
+// Delete admin user (superadmin only)
+export const deleteAdmin = mutation({
+  args: {
+    adminId: v.id("adminUsers"),
+    sessionId: v.id("sessions"),
+  },
+  handler: async (ctx, args) => {
+    // Verify requester is superadmin
+    const session = await ctx.db.get(args.sessionId);
+    if (!session || !session.userId) {
+      throw new Error("Unauthorized");
+    }
+
+    const requester = await ctx.db.get(session.userId);
+    if (!requester || requester.role !== "superadmin") {
+      throw new Error("Only superadmins can delete admin users");
+    }
+
+    // Don't allow deleting self
+    if (requester._id === args.adminId) {
+      throw new Error("Cannot delete yourself");
+    }
+
+    await ctx.db.delete(args.adminId);
+    
+    // Delete all sessions for this user
+    const sessions = await ctx.db
+      .query("sessions")
+      .withIndex("by_userId", (q) => q.eq("userId", args.adminId))
+      .collect();
+    
+    for (const session of sessions) {
+      await ctx.db.delete(session._id);
+    }
+
     return { success: true };
   },
 });

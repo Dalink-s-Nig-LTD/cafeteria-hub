@@ -20,6 +20,7 @@ import {
   Crown,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/contexts/AuthContext";
 import { UserRole } from "@/types/cafeteria";
 
 interface AdminDashboardProps {
@@ -32,40 +33,58 @@ interface TabConfig {
   id: TabType;
   label: string;
   icon: React.ReactNode;
-  superadminOnly?: boolean;
+  allowedRoles: UserRole[];
 }
 
 export function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isMobile = useIsMobile();
+  const { role } = useAuth();
 
-  // TODO: Get actual user role from auth context
-  // For now, all admin users have full access
-  const isSuperadmin = true;
+  // Role checks
+  const isSuperadmin = role === "superadmin";
+  const isManager = role === "manager";
+  const isVC = role === "vc";
+  const canEditMenu = isSuperadmin || isManager;
+  const canManageUsers = isSuperadmin;
 
   const tabs: TabConfig[] = [
     {
       id: "overview",
       label: "Overview",
       icon: <LayoutDashboard className="w-4 h-4" />,
+      allowedRoles: ["superadmin", "manager", "vc"],
     },
     {
       id: "menu",
       label: "Menu",
       icon: <UtensilsCrossed className="w-4 h-4" />,
+      allowedRoles: ["superadmin", "manager"],
     },
     {
       id: "users",
-      label: "Users",
+      label: "Admin Users",
       icon: <Users className="w-4 h-4" />,
-      superadminOnly: true,
+      allowedRoles: ["superadmin"],
     },
-    { id: "codes", label: "Access Codes", icon: <Key className="w-4 h-4" /> },
-    { id: "reports", label: "Reports", icon: <FileText className="w-4 h-4" /> },
+    {
+      id: "codes",
+      label: "Access Codes",
+      icon: <Key className="w-4 h-4" />,
+      allowedRoles: ["superadmin", "manager"],
+    },
+    {
+      id: "reports",
+      label: "Reports",
+      icon: <FileText className="w-4 h-4" />,
+      allowedRoles: ["superadmin", "manager", "vc"],
+    },
   ];
 
-  const visibleTabs = tabs.filter((tab) => !tab.superadminOnly || isSuperadmin);
+  const visibleTabs = tabs.filter((tab) =>
+    tab.allowedRoles.includes(role as UserRole),
+  );
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
@@ -86,23 +105,23 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
           </div>
         );
       case "menu":
-        return (
+        return canEditMenu ? (
           <div className="animate-fade-in">
             <MenuManagement />
           </div>
-        );
+        ) : null;
       case "users":
-        return isSuperadmin ? (
+        return canManageUsers ? (
           <div className="animate-fade-in">
             <UserManagement />
           </div>
         ) : null;
       case "codes":
-        return (
+        return canEditMenu ? (
           <div className="animate-fade-in">
-            <AccessCodeGenerator isSuperadmin={isSuperadmin} />
+            <AccessCodeGenerator />
           </div>
-        );
+        ) : null;
       case "reports":
         return (
           <div className="animate-fade-in">
@@ -125,9 +144,10 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
         >
           {tab.icon}
           {tab.label}
-          {tab.superadminOnly && (
-            <Crown className="w-3 h-3 ml-auto text-accent" />
-          )}
+          {tab.allowedRoles.includes("superadmin") &&
+            !tab.allowedRoles.includes("manager") && (
+              <Crown className="w-3 h-3 ml-auto text-accent" />
+            )}
         </Button>
       ))}
     </div>

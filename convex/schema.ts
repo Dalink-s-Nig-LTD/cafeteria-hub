@@ -7,9 +7,18 @@ export default defineSchema({
     email: v.string(),
     passwordHash: v.string(),
     name: v.string(),
+    role: v.optional(v.union(
+      v.literal("superadmin"),
+      v.literal("manager"),
+      v.literal("vc")
+    )),
     createdAt: v.number(),
+    createdBy: v.optional(v.id("adminUsers")),
+    failedLoginAttempts: v.optional(v.number()),
+    lockedUntil: v.optional(v.number()),
   })
-    .index("by_email", ["email"]),
+    .index("by_email", ["email"])
+    .index("by_role", ["role"]),
 
   // Sessions table - stores active sessions
   sessions: defineTable({

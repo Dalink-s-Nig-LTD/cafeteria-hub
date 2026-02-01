@@ -15,6 +15,7 @@ import type * as auth from "../auth.js";
 import type * as clearDemoCodes from "../clearDemoCodes.js";
 import type * as http from "../http.js";
 import type * as menuItems from "../menuItems.js";
+import type * as migrateAdminUsers from "../migrateAdminUsers.js";
 import type * as orders from "../orders.js";
 import type * as roles from "../roles.js";
 import type * as seedAccessCodes from "../seedAccessCodes.js";
@@ -34,6 +35,7 @@ declare const fullApi: ApiFromModules<{
   clearDemoCodes: typeof clearDemoCodes;
   http: typeof http;
   menuItems: typeof menuItems;
+  migrateAdminUsers: typeof migrateAdminUsers;
   orders: typeof orders;
   roles: typeof roles;
   seedAccessCodes: typeof seedAccessCodes;

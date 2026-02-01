@@ -1,7 +1,8 @@
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { LogOut, User, Shield } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import React from "react";
+import { Button } from "@/components/ui/button";
+import { LogOut, User, Shield } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import logo from "@/assets/logo.png";
 
 interface DashboardHeaderProps {
   onLogout: () => void;
@@ -9,25 +10,22 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({ onLogout }: DashboardHeaderProps) {
   const { role } = useAuth();
-  const isAdmin = role === 'admin';
+  const isAdmin = role === "admin";
 
   return (
     <header className="bg-card border-b border-border px-6 py-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className={`
-            w-10 h-10 rounded-xl flex items-center justify-center
-            ${isAdmin ? 'bg-accent/20' : 'bg-primary/10'}
-          `}>
-            {isAdmin ? (
-              <Shield className="w-5 h-5 text-accent" />
-            ) : (
-              <User className="w-5 h-5 text-primary" />
-            )}
+          <div className="w-12 h-12 flex items-center justify-center">
+            <img
+              src={logo}
+              alt="New Era Cafeteria Logo"
+              className="w-full h-full object-contain"
+            />
           </div>
           <div>
             <h1 className="font-display font-bold text-xl text-foreground">
-              {isAdmin ? 'Admin Dashboard' : 'Cashier Dashboard'}
+              {isAdmin ? "Admin Dashboard" : "Cashier Dashboard"}
             </h1>
             <p className="text-sm text-muted-foreground">
               Redeemers University · New Era Cafeteria

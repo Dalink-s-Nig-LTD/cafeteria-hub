@@ -12,6 +12,7 @@ import {
   CreditCard,
   Banknote,
   Smartphone,
+  FileDown,
 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { ReceiptModal } from "./ReceiptModal";
@@ -27,6 +28,7 @@ export function Cart() {
     clearCart,
     completeOrder,
     addItem,
+    downloadDailySalesPDF,
   } = useCart();
   const [showReceipt, setShowReceipt] = useState(false);
   const [lastOrder, setLastOrder] = useState<Order | null>(null);
@@ -79,16 +81,29 @@ export function Cart() {
         </CardHeader>
 
         <CardContent className="flex-1 flex flex-col p-4 pt-0">
+          {/* Daily Reports Section */}
+          <div className="mb-4">
+            <Button
+              onClick={downloadDailySalesPDF}
+              variant="outline"
+              className="w-full"
+              size="sm"
+            >
+              <FileDown className="w-4 h-4 mr-2" />
+              Download Today's Report
+            </Button>
+          </div>
+
           {/* Custom Amount Entry */}
           <div className="mb-4 p-3 border rounded-lg bg-secondary/30">
             <div className="mb-2 font-semibold">Add Custom Item</div>
-            <div className="flex gap-2 mb-2">
+            <div className="flex flex-col gap-2 mb-2">
               <select
                 value={customCategory}
                 onChange={(e) =>
                   setCustomCategory(e.target.value as "food" | "drinks" | "")
                 }
-                className="border rounded px-2 py-1"
+                className="border rounded px-3 py-2 w-full"
               >
                 <option value="">Select Category</option>
                 <option value="food">Food (Custom)</option>
@@ -99,15 +114,15 @@ export function Cart() {
                 placeholder="Price"
                 value={customAmount}
                 onChange={(e) => setCustomAmount(e.target.value)}
-                className="border rounded px-2 py-1 w-24"
+                className="border rounded px-3 py-2 w-full"
                 min="0"
               />
               <Button
-                size="sm"
+                className="w-full"
                 onClick={handleAddCustom}
                 disabled={!customCategory || !customAmount}
               >
-                Add
+                Add to Order
               </Button>
             </div>
             <div className="text-xs text-muted-foreground">

@@ -36,6 +36,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const storedName = localStorage.getItem("userName");
 
     if (sessionId && storedRole) {
+      // Check session expiration (24 hours)
+      const sessionCreated = parseInt(
+        localStorage.getItem("sessionCreated") || "0",
+      );
+      const sessionExpiry = sessionCreated + 24 * 60 * 60 * 1000;
+
+      if (Date.now() > sessionExpiry) {
+        // Session expired, clear storage
+        localStorage.removeItem("sessionId");
+        localStorage.removeItem("userRole");
+        localStorage.removeItem("cashierCode");
+        localStorage.removeItem("userName");
+        localStorage.removeItem("sessionCreated");
+        return;
+      }
+
       setRole(storedRole as UserRole);
       setUserName(storedName);
       if (storedRole === "cashier") {

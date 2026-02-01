@@ -17,7 +17,11 @@ export const getCurrentRole = query({
 export const assignRole = mutation({
   args: {
     adminUserId: v.id("adminUsers"),
-    role: v.union(v.literal("superadmin"), v.literal("admin"), v.literal("cashier")),
+    role: v.union(
+      v.literal("superadmin"),
+      v.literal("manager"),
+      v.literal("vc")
+    ),
   },
   handler: async (ctx, args) => {
     // Check if user already has a role
@@ -66,7 +70,11 @@ export const removeRole = mutation({
 // Get users by role
 export const getUsersByRole = query({
   args: {
-    role: v.union(v.literal("superadmin"), v.literal("admin"), v.literal("cashier")),
+    role: v.union(
+      v.literal("superadmin"),
+      v.literal("manager"),
+      v.literal("vc")
+    ),
   },
   handler: async (ctx, args) => {
     const roleAssignments = await ctx.db

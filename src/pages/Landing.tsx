@@ -23,8 +23,8 @@ export function Landing({ onLogin }: LandingProps) {
         {/* Logo & Title */}
         <div className="text-center mb-6 sm:mb-8 animate-fade-in">
           <div
-            className="mx-auto mb-4 sm:mb-6 bg-white border-4 border-primary/20 shadow-xl flex items-center justify-center"
-            style={{ width: 120, height: 120 }}
+            className="mx-auto mb-4 sm:mb-6 flex items-center justify-center"
+            style={{ width: 180, height: 180 }}
           >
             <img
               src={logo}

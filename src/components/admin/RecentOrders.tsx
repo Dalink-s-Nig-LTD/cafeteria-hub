@@ -62,8 +62,8 @@ export function RecentOrders() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-[300px]">
-          <div className="space-y-4">
+        <ScrollArea className="h-[480px] pr-4">
+          <div className="space-y-3">
             {recentOrders.map((order) => {
               const PaymentIcon = paymentIcons[order.paymentMethod];
 
