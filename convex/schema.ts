@@ -10,7 +10,8 @@ export default defineSchema({
     role: v.optional(v.union(
       v.literal("superadmin"),
       v.literal("manager"),
-      v.literal("vc")
+      v.literal("vc"),
+      v.literal("supervisor")
     )),
     createdAt: v.number(),
     createdBy: v.optional(v.id("adminUsers")),

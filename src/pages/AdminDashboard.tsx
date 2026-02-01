@@ -45,7 +45,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
   // Role checks
   const isSuperadmin = role === "superadmin";
   const isManager = role === "manager";
-  const isVC = role === "vc";
+  const isVC = role === "vc" || role === "supervisor";
   const canEditMenu = isSuperadmin || isManager;
   const canManageUsers = isSuperadmin;
 

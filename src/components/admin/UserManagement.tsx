@@ -76,10 +76,12 @@ export function UserManagement() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"superadmin" | "manager" | "vc">("manager");
-  const [editRole, setEditRole] = useState<"superadmin" | "manager" | "vc">(
-    "manager",
-  );
+  const [role, setRole] = useState<
+    "superadmin" | "manager" | "vc" | "supervisor"
+  >("manager");
+  const [editRole, setEditRole] = useState<
+    "superadmin" | "manager" | "vc" | "supervisor"
+  >("manager");
 
   // Fetch all admin users
   const users = useQuery(api.adminAuth.getAllAdmins);
@@ -235,6 +237,8 @@ export function UserManagement() {
         return <Shield className="w-3 h-3" />;
       case "vc":
         return <Eye className="w-3 h-3" />;
+      case "supervisor":
+        return <Eye className="w-3 h-3" />;
       default:
         return <UsersIcon className="w-3 h-3" />;
     }
@@ -247,6 +251,8 @@ export function UserManagement() {
       case "manager":
         return "default";
       case "vc":
+        return "secondary";
+      case "supervisor":
         return "secondary";
       default:
         return "outline";
@@ -330,7 +336,9 @@ export function UserManagement() {
                   <Select
                     value={role}
                     onValueChange={(val) =>
-                      setRole(val as "superadmin" | "manager" | "vc")
+                      setRole(
+                        val as "superadmin" | "manager" | "vc" | "supervisor",
+                      )
                     }
                   >
                     <SelectTrigger>
@@ -353,6 +361,12 @@ export function UserManagement() {
                         <div className="flex items-center gap-2">
                           <Eye className="w-4 h-4" />
                           <span>VC - View Only & Reports</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="supervisor">
+                        <div className="flex items-center gap-2">
+                          <Eye className="w-4 h-4" />
+                          <span>Supervisor - View Only & Reports</span>
                         </div>
                       </SelectItem>
                     </SelectContent>
@@ -476,7 +490,9 @@ export function UserManagement() {
                 <Select
                   value={editRole}
                   onValueChange={(val) =>
-                    setEditRole(val as "superadmin" | "manager" | "vc")
+                    setEditRole(
+                      val as "superadmin" | "manager" | "vc" | "supervisor",
+                    )
                   }
                 >
                   <SelectTrigger>
@@ -499,6 +515,12 @@ export function UserManagement() {
                       <div className="flex items-center gap-2">
                         <Eye className="w-4 h-4" />
                         <span>VC - View Only & Reports</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="supervisor">
+                      <div className="flex items-center gap-2">
+                        <Eye className="w-4 h-4" />
+                        <span>Supervisor - View Only & Reports</span>
                       </div>
                     </SelectItem>
                   </SelectContent>

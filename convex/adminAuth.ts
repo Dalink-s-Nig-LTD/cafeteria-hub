@@ -299,7 +299,8 @@ export const createAdmin = mutation({
     role: v.union(
       v.literal("superadmin"),
       v.literal("manager"),
-      v.literal("vc")
+      v.literal("vc"),
+      v.literal("supervisor")
     ),
     sessionId: v.id("sessions"),
   },
@@ -346,7 +347,8 @@ export const updateAdminRole = mutation({
     role: v.union(
       v.literal("superadmin"),
       v.literal("manager"),
-      v.literal("vc")
+      v.literal("vc"),
+      v.literal("supervisor")
     ),
     sessionId: v.id("sessions"),
   },

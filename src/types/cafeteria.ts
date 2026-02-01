@@ -37,7 +37,7 @@ export interface CategorySales {
 }
 
 // Enhanced role types
-export type UserRole = 'superadmin' | 'manager' | 'vc' | 'admin' | 'cashier' | null;
+export type UserRole = 'superadmin' | 'manager' | 'vc' | 'supervisor' | 'admin' | 'cashier' | null;
 
 // Access code for cashier/admin login
 export interface AccessCode {

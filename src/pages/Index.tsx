@@ -1,9 +1,9 @@
-import React from 'react';
-import { AuthProvider, useAuth } from '@/contexts/AuthContext';
-import { CartProvider } from '@/contexts/CartContext';
-import { Landing } from './Landing';
-import { CashierDashboard } from './CashierDashboard';
-import { AdminDashboard } from './AdminDashboard';
+import React from "react";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { CartProvider } from "@/contexts/CartContext";
+import { Landing } from "./Landing";
+import { CashierDashboard } from "./CashierDashboard";
+import { AdminDashboard } from "./AdminDashboard";
 
 function AppContent() {
   const { role, logout } = useAuth();
@@ -16,7 +16,8 @@ function AppContent() {
     return <Landing onLogin={() => {}} />;
   }
 
-  if (role === 'cashier') {
+  // Cashier dashboard for cashier role
+  if (role === "cashier") {
     return (
       <CartProvider>
         <CashierDashboard onLogout={handleLogout} />
@@ -24,7 +25,18 @@ function AppContent() {
     );
   }
 
-  return <AdminDashboard onLogout={handleLogout} />;
+  // Admin dashboard for admin roles (superadmin, manager, vc, supervisor)
+  if (
+    role === "superadmin" ||
+    role === "manager" ||
+    role === "vc" ||
+    role === "supervisor"
+  ) {
+    return <AdminDashboard onLogout={handleLogout} />;
+  }
+
+  // Fallback to landing if role is unrecognized
+  return <Landing onLogin={() => {}} />;
 }
 
 const Index = () => {
