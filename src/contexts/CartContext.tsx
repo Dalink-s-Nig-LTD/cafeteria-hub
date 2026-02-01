@@ -1,6 +1,11 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { CartItem, MenuItem, Order } from '@/types/cafeteria';
+import React, { useContext, useState, ReactNode } from "react";
+import { useMutation } from "@/lib/convexApi";
+import { api } from "@/lib/convexApi";
+import { CartItem, MenuItem, Order } from "@/types/cafeteria";
+import type { Id } from "../../convex/_generated/dataModel";
+import { useAuth } from "./AuthContext";
 
+// Define the CartContext type
 interface CartContextType {
   items: CartItem[];
   addItem: (item: MenuItem) => void;
@@ -10,21 +15,26 @@ interface CartContextType {
   total: number;
   itemCount: number;
   orders: Order[];
-  completeOrder: (paymentMethod: 'cash' | 'card' | 'transfer') => Order;
+  completeOrder: (paymentMethod: "cash" | "card" | "transfer") => Order;
 }
 
-const CartContext = createContext<CartContextType | undefined>(undefined);
+// Create the CartContext with an initial undefined value
+export const CartContext = React.createContext<CartContextType | undefined>(
+  undefined,
+);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const createOrder = useMutation(api.orders.createOrder);
+  const { code: cashierCode } = useAuth();
 
   const addItem = (item: MenuItem) => {
     setItems((current) => {
       const existing = current.find((i) => i.id === item.id);
       if (existing) {
         return current.map((i) =>
-          i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
+          i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i,
         );
       }
       return [...current, { ...item, quantity: 1 }];
@@ -41,7 +51,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return;
     }
     setItems((current) =>
-      current.map((i) => (i.id === id ? { ...i, quantity } : i))
+      current.map((i) => (i.id === id ? { ...i, quantity } : i)),
     );
   };
 
@@ -49,18 +59,38 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems([]);
   };
 
-  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const total = items.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0,
+  );
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
-  const completeOrder = (paymentMethod: 'cash' | 'card' | 'transfer'): Order => {
+  const completeOrder = (
+    paymentMethod: "cash" | "card" | "transfer",
+  ): Order => {
+    const now = Date.now();
     const order: Order = {
-      id: `ORD-${Date.now().toString(36).toUpperCase()}`,
+      id: `ORD-${now.toString(36).toUpperCase()}`,
       items: [...items],
       total,
       timestamp: new Date(),
       paymentMethod,
-      status: 'completed',
+      status: "completed",
     };
+    // Save to backend with correct schema
+    createOrder({
+      items: items.map(({ id, name, price, quantity }) => ({
+        menuItemId: id as Id<"menuItems">,
+        name,
+        price,
+        quantity,
+      })),
+      total,
+      paymentMethod,
+      status: "completed",
+      cashierCode: cashierCode || "",
+      createdAt: now,
+    });
     setOrders((current) => [order, ...current]);
     clearCart();
     return order;
@@ -85,10 +115,4 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useCart() {
-  const context = useContext(CartContext);
-  if (context === undefined) {
-    throw new Error('useCart must be used within a CartProvider');
-  }
-  return context;
-}
+// useCart hook moved to a separate file (useCart.ts)

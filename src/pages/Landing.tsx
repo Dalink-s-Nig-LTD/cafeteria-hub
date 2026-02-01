@@ -32,10 +32,10 @@ export function Landing({ onLogin }: LandingProps) {
           </div>
 
           <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-2 sm:mb-3">
-            Redeemers University
+            New Era Cafeteria
           </h1>
           <p className="text-lg sm:text-xl text-gradient font-semibold mb-2">
-            New Era Cafeteria
+            Redeemers University, Ede, Osun State
           </p>
         </div>
 

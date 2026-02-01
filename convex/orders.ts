@@ -1,4 +1,35 @@
-import { query } from "./_generated/server";
+import { query, mutation } from "./_generated/server";
+
+// Create a new order (for cashier)
+export const createOrder = mutation({
+  args: {
+    items: v.array(
+      v.object({
+        menuItemId: v.id("menuItems"),
+        name: v.string(),
+        price: v.number(),
+        quantity: v.number(),
+      })
+    ),
+    total: v.number(),
+    paymentMethod: v.union(v.literal("cash"), v.literal("card"), v.literal("transfer")),
+    status: v.union(v.literal("pending"), v.literal("completed"), v.literal("cancelled")),
+    cashierCode: v.string(),
+    createdAt: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const order = {
+      items: args.items,
+      total: args.total,
+      paymentMethod: args.paymentMethod,
+      status: args.status,
+      cashierCode: args.cashierCode,
+      createdAt: args.createdAt,
+    };
+    const id = await ctx.db.insert("orders", order);
+    return { _id: id };
+  },
+});
 import { v } from "convex/values";
 
 // Get recent orders

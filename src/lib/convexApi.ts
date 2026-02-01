@@ -1,5 +1,5 @@
 // Convex API import for client queries
 import { api } from "../../convex/_generated/api";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 
-export { api, useQuery };
+export { api, useQuery, useMutation };
