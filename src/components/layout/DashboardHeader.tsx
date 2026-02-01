@@ -9,8 +9,12 @@ interface DashboardHeaderProps {
 }
 
 export function DashboardHeader({ onLogout }: DashboardHeaderProps) {
-  const { role } = useAuth();
-  const isAdmin = role === "admin";
+  const { role, userName } = useAuth();
+  const isAdmin =
+    role === "superadmin" ||
+    role === "manager" ||
+    role === "vc" ||
+    role === "supervisor";
 
   return (
     <header className="bg-card border-b border-border px-6 py-4">
@@ -25,7 +29,7 @@ export function DashboardHeader({ onLogout }: DashboardHeaderProps) {
           </div>
           <div>
             <h1 className="font-display font-bold text-xl text-foreground">
-              {isAdmin ? "Admin Dashboard" : "Cashier Dashboard"}
+              {isAdmin ? userName || "Admin Dashboard" : "Cashier Dashboard"}
             </h1>
             <p className="text-sm text-muted-foreground">
               Redeemers University · New Era Cafeteria
