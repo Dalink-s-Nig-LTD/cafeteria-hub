@@ -85,7 +85,8 @@ export function Auth() {
         localStorage.setItem("sessionCreated", Date.now().toString());
       }
 
-      navigate("/");
+      // Reload page to ensure AuthContext picks up the new role
+      window.location.href = "/";
     } catch (err) {
       console.error("Auth error:", err);
       let msg = "Authentication failed. Please try again.";
