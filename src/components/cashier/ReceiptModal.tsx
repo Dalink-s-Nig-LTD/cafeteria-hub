@@ -63,81 +63,75 @@ const POSReceipt = ({
 
   return (
     <div
-      className="pos-receipt bg-white font-mono text-[11px] relative"
-      style={{ width: "58mm", maxWidth: "58mm", margin: 0, padding: 0 }}
+      className="pos-receipt"
+      style={{
+        width: "58mm",
+        maxWidth: "58mm",
+        margin: 0,
+        padding: "2mm",
+        backgroundColor: "white",
+        fontFamily: "'Courier New', Courier, monospace",
+        fontSize: "11px",
+        color: "#000",
+        position: "relative",
+        boxSizing: "border-box",
+      }}
     >
-      {/* Single Watermark Logo (background) */}
-      <div className="absolute inset-0 z-0" style={{ opacity: 0.13 }}>
-        <img
-          src="/logo.png"
-          alt="Watermark"
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            filter: "none",
-            position: "absolute",
-            top: 0,
-            left: 0,
-          }}
-        />
-      </div>
-
       {/* Header: Name and Location */}
-      <div className="text-center font-extrabold text-[14px] mb-1 relative z-10 leading-tight tracking-wide">
+      <div style={{ textAlign: "center", fontWeight: "bold", fontSize: "14px", marginBottom: "4px", lineHeight: "1.2" }}>
         <div>New Era Cafeteria</div>
-        <div className="text-[12px]">Redeemer's University</div>
-        <div className="font-normal text-[10px]">Main Campus, Ede</div>
+        <div style={{ fontSize: "12px" }}>Redeemer's University</div>
+        <div style={{ fontWeight: "normal", fontSize: "10px" }}>Main Campus, Ede</div>
       </div>
 
-      <div className="border-t border-black border-dashed my-1 relative z-10"></div>
+      <div style={{ borderTop: "1px dashed #000", margin: "4px 0" }}></div>
 
       {/* Order Details */}
-      <div className="mb-1 text-[10px] relative z-10">
-        <div className="flex justify-between">
+      <div style={{ fontSize: "10px", marginBottom: "4px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
           <span>Order ID:</span>
-          <span className="font-semibold">{formatOrderId(order.id)}</span>
+          <span style={{ fontWeight: "600" }}>{formatOrderId(order.id)}</span>
         </div>
-        <div className="flex justify-between">
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
           <span>Date:</span>
           <span>{format(order.timestamp, "dd/MM/yyyy HH:mm")}</span>
         </div>
-        <div className="flex justify-between">
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
           <span>Payment:</span>
-          <span className="capitalize">{order.paymentMethod}</span>
+          <span style={{ textTransform: "capitalize" }}>{order.paymentMethod}</span>
         </div>
       </div>
 
-      <div className="border-t border-black border-dashed my-1 relative z-10"></div>
+      <div style={{ borderTop: "1px dashed #000", margin: "4px 0" }}></div>
 
       {/* Items */}
-      <div className="mb-1 relative z-10">
+      <div style={{ marginBottom: "4px" }}>
         {items.map((item, idx) => (
-          <div key={idx} className="flex justify-between mb-0.5 text-[11px]">
-            <span className="flex-1">
+          <div key={idx} style={{ display: "flex", justifyContent: "space-between", marginBottom: "2px", fontSize: "11px" }}>
+            <span style={{ flex: 1 }}>
               {item.quantity}x {item.name}
             </span>
-            <span className="ml-2 text-right font-medium">
+            <span style={{ marginLeft: "8px", textAlign: "right", fontWeight: "500" }}>
               ₦{(item.price * item.quantity).toLocaleString()}
             </span>
           </div>
         ))}
       </div>
 
-      <div className="border-t border-black border-dashed my-1 relative z-10"></div>
+      <div style={{ borderTop: "1px dashed #000", margin: "4px 0" }}></div>
 
       {/* Total */}
-      <div className="flex justify-between font-extrabold text-[13px] mb-2 relative z-10">
+      <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", fontSize: "13px", marginBottom: "8px" }}>
         <span>TOTAL</span>
         <span>₦{total.toLocaleString()}</span>
       </div>
 
-      <div className="border-t border-black border-dashed my-1 relative z-10"></div>
+      <div style={{ borderTop: "1px dashed #000", margin: "4px 0" }}></div>
 
       {/* Footer */}
-      <div className="text-center text-[10px] relative z-10 mt-1">
-        <p className="font-semibold">Thank you for your patronage!</p>
-        <p className="mt-0.5">Please come again 🙏</p>
+      <div style={{ textAlign: "center", fontSize: "10px", marginTop: "4px" }}>
+        <p style={{ fontWeight: "600" }}>Thank you for your patronage!</p>
+        <p style={{ marginTop: "2px" }}>Please come again</p>
       </div>
     </div>
   );
@@ -178,43 +172,38 @@ export function ReceiptModal({ order, isOpen, onClose }: ReceiptModalProps) {
                 margin: 0;
               }
               html, body {
-                margin: 0;
-                padding: 0;
-                width: 58mm;
-                min-height: 0 !important;
-                height: auto !important;
-              }
-              .pos-receipt {
+                margin: 0 !important;
+                padding: 0 !important;
                 width: 58mm !important;
-                max-width: 58mm !important;
-                font-family: 'Courier New', monospace;
-                font-size: 10px;
-                padding: 0.5mm 0.5mm;
-                margin: 0;
-                box-sizing: border-box;
-                min-height: 0 !important;
-                height: auto !important;
-                overflow: visible !important;
-                position: relative;
+              }
+              body {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
               }
             }
-            body {
-              font-family: 'Courier New', monospace;
+            * {
+              box-sizing: border-box;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            html, body {
               margin: 0;
               padding: 0;
+              width: 58mm;
+              font-family: 'Courier New', Courier, monospace;
+              font-size: 11px;
+              color: #000;
+              background: white;
             }
             .pos-receipt {
-              width: 58mm;
-              max-width: 58mm;
-              background: white;
-              padding: 0.5mm 0.5mm;
-              margin: 0;
-              font-size: 10px;
-              box-sizing: border-box;
-              min-height: 0 !important;
-              height: auto !important;
-              overflow: visible !important;
-              position: relative;
+              width: 58mm !important;
+              max-width: 58mm !important;
+              padding: 2mm !important;
+              margin: 0 !important;
+              background: white !important;
+              font-family: 'Courier New', Courier, monospace !important;
+              font-size: 11px !important;
+              color: #000 !important;
             }
           </style>
         </head>
