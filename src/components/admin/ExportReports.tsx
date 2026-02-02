@@ -25,6 +25,7 @@ import {
   FileSpreadsheet,
   Calendar as CalendarIcon,
   TrendingUp,
+  Printer,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -32,6 +33,7 @@ import { useToast } from "@/hooks/use-toast";
 
 type ReportType = "sales" | "orders" | "inventory" | "users";
 type ExportFormat = "pdf" | "csv" | "excel";
+type SalesFormat = "detailed" | "receipt";
 
 interface ReportOption {
   id: ReportType;
@@ -71,8 +73,10 @@ export function ExportReports() {
   const ordersStats = useQuery(api.orders.getOrdersStats);
   const allOrders = useQuery(api.orders.getAllOrders);
   const menuItems = useQuery(api.menuItems.getAllMenuItems);
+  const accessCodes = useQuery(api.accessCodes.listAccessCodes);
   const [selectedReport, setSelectedReport] = useState<ReportType>("sales");
   const [exportFormat, setExportFormat] = useState<ExportFormat>("pdf");
+  const [salesFormat, setSalesFormat] = useState<SalesFormat>("receipt");
   const [dateRange, setDateRange] = useState<{
     from: Date | undefined;
     to: Date | undefined;
@@ -81,7 +85,592 @@ export function ExportReports() {
     to: undefined,
   });
   const [isExporting, setIsExporting] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
   const { toast } = useToast();
+
+  const handlePrint = async () => {
+    setIsPrinting(true);
+
+    try {
+      printReceiptStylePDF();
+      toast({
+        title: "Opening Print Dialog",
+        description: "Your receipt is ready to print",
+      });
+    } catch (error) {
+      toast({
+        title: "Print Failed",
+        description:
+          "There was an error preparing the receipt. Please try again.",
+        variant: "destructive",
+      });
+    }
+
+    setIsPrinting(false);
+  };
+
+  const generateReceiptStylePDF = () => {
+    const doc = new jsPDF() as any;
+    const pageWidth = doc.internal.pageSize.width;
+    const margin = 15;
+    let y = 20;
+
+    const filteredOrders =
+      dateRange.from && dateRange.to && allOrders
+        ? allOrders.filter((order) => {
+            const orderDate = new Date(order.createdAt);
+            return orderDate >= dateRange.from! && orderDate <= dateRange.to!;
+          })
+        : allOrders || [];
+
+    // Header
+    doc.setFontSize(16);
+    doc.setFont(undefined, "bold");
+    doc.text("NEW ERA CAFETERIA", pageWidth / 2, y, { align: "center" });
+    y += 6;
+
+    doc.setFontSize(9);
+    doc.setFont(undefined, "normal");
+    doc.text("Redeemers University, Ede", pageWidth / 2, y, {
+      align: "center",
+    });
+    y += 5;
+    doc.text("Osun State, Nigeria", pageWidth / 2, y, { align: "center" });
+    y += 8;
+
+    // Report period
+    doc.setFont(undefined, "bold");
+    doc.setFontSize(10);
+    doc.text("SALES REPORT", pageWidth / 2, y, { align: "center" });
+    y += 5;
+
+    doc.setFont(undefined, "normal");
+    doc.setFontSize(8);
+    const dateStr =
+      dateRange.from && dateRange.to
+        ? `${format(dateRange.from, "MMM dd, yyyy")} - ${format(dateRange.to, "MMM dd, yyyy")}`
+        : `Generated: ${format(new Date(), "MMM dd, yyyy")}`;
+    doc.text(dateStr, pageWidth / 2, y, { align: "center" });
+    y += 3;
+
+    // Separator line
+    doc.setLineWidth(0.5);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 5;
+
+    // Group by day
+    const ordersByDay = filteredOrders.reduce(
+      (acc, order) => {
+        const orderDate = new Date(order.createdAt);
+        const dayKey = format(orderDate, "yyyy-MM-dd");
+        if (!acc[dayKey]) {
+          acc[dayKey] = [];
+        }
+        acc[dayKey].push(order);
+        return acc;
+      },
+      {} as Record<string, typeof filteredOrders>,
+    );
+
+    const sortedDays = Object.keys(ordersByDay).sort();
+    let grandTotal = 0;
+    let totalOrders = 0;
+
+    sortedDays.forEach((dayKey, dayIndex) => {
+      const dayOrders = ordersByDay[dayKey];
+      const dayDate = new Date(dayKey);
+      const dayTotal = dayOrders.reduce((sum, order) => sum + order.total, 0);
+
+      // Day header
+      doc.setFontSize(9);
+      doc.setFont(undefined, "bold");
+      doc.text(`${format(dayDate, "EEEE, MMM dd, yyyy")}`, margin, y);
+      y += 5;
+
+      // Shift breakdown
+      const morningOrders = dayOrders.filter((order) => {
+        const hour = new Date(order.createdAt).getHours();
+        return hour >= 6 && hour < 18;
+      });
+      const nightOrders = dayOrders.filter((order) => {
+        const hour = new Date(order.createdAt).getHours();
+        return hour >= 18 || hour < 6;
+      });
+
+      if (morningOrders.length > 0) {
+        const morningTotal = morningOrders.reduce(
+          (sum, order) => sum + order.total,
+          0,
+        );
+        const morningCash = morningOrders.filter(
+          (o) => o.paymentMethod === "Cash",
+        ).length;
+        const morningTransfer = morningOrders.filter(
+          (o) => o.paymentMethod === "Transfer",
+        ).length;
+
+        doc.setFont(undefined, "normal");
+        doc.setFontSize(8);
+        doc.text(`  Morning Shift (6 AM - 6 PM)`, margin + 2, y);
+        y += 4;
+        doc.text(
+          `  Orders: ${morningOrders.length} (Cash: ${morningCash}, Transfer: ${morningTransfer})`,
+          margin + 4,
+          y,
+        );
+        doc.text(`N${morningTotal.toLocaleString()}`, pageWidth - margin, y, {
+          align: "right",
+        });
+        y += 5;
+      }
+
+      if (nightOrders.length > 0) {
+        const nightTotal = nightOrders.reduce(
+          (sum, order) => sum + order.total,
+          0,
+        );
+        const nightCash = nightOrders.filter(
+          (o) => o.paymentMethod === "Cash",
+        ).length;
+        const nightTransfer = nightOrders.filter(
+          (o) => o.paymentMethod === "Transfer",
+        ).length;
+
+        doc.setFont(undefined, "normal");
+        doc.setFontSize(8);
+        doc.text(`  Night Shift (6 PM - 6 AM)`, margin + 2, y);
+        y += 4;
+        doc.text(
+          `  Orders: ${nightOrders.length} (Cash: ${nightCash}, Transfer: ${nightTransfer})`,
+          margin + 4,
+          y,
+        );
+        doc.text(`N${nightTotal.toLocaleString()}`, pageWidth - margin, y, {
+          align: "right",
+        });
+        y += 5;
+      }
+
+      // Day total
+      const cashCount = dayOrders.filter(
+        (o) => o.paymentMethod === "Cash",
+      ).length;
+      const transferCount = dayOrders.filter(
+        (o) => o.paymentMethod === "Transfer",
+      ).length;
+
+      doc.setFont(undefined, "bold");
+      doc.setFontSize(9);
+      doc.text(`Day Total:`, margin, y);
+      doc.text(`N${dayTotal.toLocaleString()}`, pageWidth - margin, y, {
+        align: "right",
+      });
+      y += 4;
+      doc.setFont(undefined, "normal");
+      doc.setFontSize(7);
+      doc.text(
+        `(${dayOrders.length} orders: ${cashCount} Cash, ${transferCount} Transfer)`,
+        margin,
+        y,
+      );
+      y += 5;
+
+      // Separator
+      doc.setLineWidth(0.2);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 5;
+
+      grandTotal += dayTotal;
+      totalOrders += dayOrders.length;
+
+      // Check if we need a new page
+      if (y > 270 && dayIndex < sortedDays.length - 1) {
+        doc.addPage();
+        y = 20;
+      }
+    });
+
+    // Summary section
+    y += 3;
+    doc.setLineWidth(0.5);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 6;
+
+    doc.setFontSize(11);
+    doc.setFont(undefined, "bold");
+    doc.text("SUMMARY", pageWidth / 2, y, { align: "center" });
+    y += 7;
+
+    doc.setFontSize(9);
+    doc.setFont(undefined, "normal");
+    doc.text(`Total Orders:`, margin, y);
+    doc.text(totalOrders.toString(), pageWidth - margin, y, {
+      align: "right",
+    });
+    y += 5;
+
+    doc.text(`Total Days:`, margin, y);
+    doc.text(sortedDays.length.toString(), pageWidth - margin, y, {
+      align: "right",
+    });
+    y += 5;
+
+    const totalCash = filteredOrders.filter(
+      (o) => o.paymentMethod === "Cash",
+    ).length;
+    const totalTransfer = filteredOrders.filter(
+      (o) => o.paymentMethod === "Transfer",
+    ).length;
+
+    doc.text(`Cash Payments:`, margin, y);
+    doc.text(totalCash.toString(), pageWidth - margin, y, { align: "right" });
+    y += 5;
+
+    doc.text(`Transfer Payments:`, margin, y);
+    doc.text(totalTransfer.toString(), pageWidth - margin, y, {
+      align: "right",
+    });
+    y += 7;
+
+    doc.setLineWidth(0.3);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 6;
+
+    doc.setFontSize(12);
+    doc.setFont(undefined, "bold");
+    doc.text(`TOTAL REVENUE:`, margin, y);
+    doc.text(`N${grandTotal.toLocaleString()}`, pageWidth - margin, y, {
+      align: "right",
+    });
+    y += 8;
+
+    doc.setLineWidth(0.5);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 8;
+
+    // Footer
+    doc.setFontSize(7);
+    doc.setFont(undefined, "normal");
+    doc.text(
+      `Printed: ${format(new Date(), "MMM dd, yyyy hh:mm a")}`,
+      pageWidth / 2,
+      y,
+      { align: "center" },
+    );
+    y += 4;
+    doc.text("Thank you for your business!", pageWidth / 2, y, {
+      align: "center",
+    });
+
+    const fileName = `sales_receipt_${format(new Date(), "yyyy-MM-dd")}.pdf`;
+    doc.save(fileName);
+  };
+
+  const printReceiptStylePDF = () => {
+    const filteredOrders =
+      dateRange.from && dateRange.to && allOrders
+        ? allOrders.filter((order) => {
+            const orderDate = new Date(order.createdAt);
+            return orderDate >= dateRange.from! && orderDate <= dateRange.to!;
+          })
+        : allOrders || [];
+
+    // Create an iframe for printing
+    const printFrame = document.createElement("iframe");
+    printFrame.style.position = "absolute";
+    printFrame.style.width = "0";
+    printFrame.style.height = "0";
+    printFrame.style.border = "none";
+    document.body.appendChild(printFrame);
+
+    const printDoc =
+      printFrame.contentDocument || printFrame.contentWindow?.document;
+    if (!printDoc) return;
+
+    // Group by day
+    const ordersByDay = filteredOrders.reduce(
+      (acc, order) => {
+        const orderDate = new Date(order.createdAt);
+        const dayKey = format(orderDate, "yyyy-MM-dd");
+        if (!acc[dayKey]) {
+          acc[dayKey] = [];
+        }
+        acc[dayKey].push(order);
+        return acc;
+      },
+      {} as Record<string, typeof filteredOrders>,
+    );
+
+    const sortedDays = Object.keys(ordersByDay).sort();
+    let grandTotal = 0;
+    let totalOrders = 0;
+    const totalCash = filteredOrders.filter(
+      (o) => o.paymentMethod === "Cash",
+    ).length;
+    const totalTransfer = filteredOrders.filter(
+      (o) => o.paymentMethod === "Transfer",
+    ).length;
+
+    // Build HTML content
+    let htmlContent = `
+      <html>
+        <head>
+          <title>Sales Receipt</title>
+          <style>
+            @media print {
+              @page {
+                size: 80mm auto;
+                margin: 0;
+              }
+              html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 80mm !important;
+              }
+              body {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+            }
+            * {
+              box-sizing: border-box;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            html, body {
+              margin: 0;
+              padding: 0;
+              width: 80mm;
+              font-family: 'Courier New', Courier, monospace;
+              font-size: 11px;
+              color: #000;
+              background: white;
+            }
+            .receipt {
+              width: 80mm;
+              max-width: 80mm;
+              padding: 3mm;
+              margin: 0;
+              background: white;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 4px;
+              line-height: 1.2;
+            }
+            .header .title {
+              font-weight: 900;
+              font-size: 15px;
+              letter-spacing: 1px;
+            }
+            .header .subtitle {
+              font-size: 11px;
+              margin-top: 2px;
+            }
+            .dashed {
+              border-top: 1px dashed #000;
+              margin: 4px 0;
+            }
+            .row {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 2px;
+              font-size: 10px;
+            }
+            .bold {
+              font-weight: 600;
+            }
+            .section-header {
+              font-weight: 700;
+              font-size: 11px;
+              margin: 4px 0 2px 0;
+            }
+            .indent {
+              padding-left: 8px;
+              font-size: 10px;
+            }
+            .total-row {
+              display: flex;
+              justify-content: space-between;
+              font-weight: bold;
+              font-size: 12px;
+              margin: 4px 0;
+            }
+            .footer {
+              text-align: center;
+              font-size: 10px;
+              margin-top: 4px;
+            }
+            .footer .bold {
+              font-weight: 600;
+            }
+            .page-break {
+              page-break-after: always;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="receipt">
+            <!-- Header -->
+            <div class="header">
+              <div class="title">NEW ERA CAFETERIA</div>
+              <div class="subtitle">Redeemer's University, Ede</div>
+              <div class="subtitle">Osun State, Nigeria</div>
+            </div>
+
+            <div class="dashed"></div>
+
+            <!-- Report Info -->
+            <div class="row">
+              <span>SALES REPORT</span>
+            </div>
+            <div class="row">
+              <span>Period:</span>
+              <span>${
+                dateRange.from && dateRange.to
+                  ? `${format(dateRange.from, "dd/MM/yy")} - ${format(dateRange.to, "dd/MM/yy")}`
+                  : format(new Date(), "dd/MM/yy")
+              }</span>
+            </div>
+
+            <div class="dashed"></div>
+    `;
+
+    // Add each day's data
+    sortedDays.forEach((dayKey, dayIndex) => {
+      const dayOrders = ordersByDay[dayKey];
+      const dayDate = new Date(dayKey);
+      const dayTotal = dayOrders.reduce((sum, order) => sum + order.total, 0);
+
+      // Shift breakdown
+      const morningOrders = dayOrders.filter((order) => {
+        const hour = new Date(order.createdAt).getHours();
+        return hour >= 6 && hour < 18;
+      });
+      const nightOrders = dayOrders.filter((order) => {
+        const hour = new Date(order.createdAt).getHours();
+        return hour >= 18 || hour < 6;
+      });
+
+      htmlContent += `
+            <div class="section-header">${format(dayDate, "EEE, dd MMM yyyy")}</div>
+      `;
+
+      // Morning shift
+      if (morningOrders.length > 0) {
+        const morningTotal = morningOrders.reduce(
+          (sum, order) => sum + order.total,
+          0,
+        );
+        const morningCash = morningOrders.filter(
+          (o) => o.paymentMethod === "Cash",
+        ).length;
+        const morningTransfer = morningOrders.filter(
+          (o) => o.paymentMethod === "Transfer",
+        ).length;
+
+        htmlContent += `
+            <div class="indent">Morning Shift (6AM-6PM)</div>
+            <div class="row indent">
+              <span>${morningOrders.length} orders (C:${morningCash}, T:${morningTransfer})</span>
+              <span class="bold">₦${morningTotal.toLocaleString()}</span>
+            </div>
+        `;
+      }
+
+      // Night shift
+      if (nightOrders.length > 0) {
+        const nightTotal = nightOrders.reduce(
+          (sum, order) => sum + order.total,
+          0,
+        );
+        const nightCash = nightOrders.filter(
+          (o) => o.paymentMethod === "Cash",
+        ).length;
+        const nightTransfer = nightOrders.filter(
+          (o) => o.paymentMethod === "Transfer",
+        ).length;
+
+        htmlContent += `
+            <div class="indent">Night Shift (6PM-6AM)</div>
+            <div class="row indent">
+              <span>${nightOrders.length} orders (C:${nightCash}, T:${nightTransfer})</span>
+              <span class="bold">₦${nightTotal.toLocaleString()}</span>
+            </div>
+        `;
+      }
+
+      const cashCount = dayOrders.filter(
+        (o) => o.paymentMethod === "Cash",
+      ).length;
+      const transferCount = dayOrders.filter(
+        (o) => o.paymentMethod === "Transfer",
+      ).length;
+
+      htmlContent += `
+            <div class="row bold">
+              <span>Day Total</span>
+              <span>₦${dayTotal.toLocaleString()}</span>
+            </div>
+            <div class="row" style="font-size: 9px; margin-bottom: 4px;">
+              <span>${dayOrders.length} orders (Cash:${cashCount}, Transfer:${transferCount})</span>
+            </div>
+            <div class="dashed"></div>
+      `;
+
+      grandTotal += dayTotal;
+      totalOrders += dayOrders.length;
+    });
+
+    // Summary
+    htmlContent += `
+            <div class="section-header" style="text-align: center;">SUMMARY</div>
+            <div class="row">
+              <span>Total Orders:</span>
+              <span class="bold">${totalOrders}</span>
+            </div>
+            <div class="row">
+              <span>Total Days:</span>
+              <span class="bold">${sortedDays.length}</span>
+            </div>
+            <div class="row">
+              <span>Cash Payments:</span>
+              <span class="bold">${totalCash}</span>
+            </div>
+            <div class="row">
+              <span>Transfer Payments:</span>
+              <span class="bold">${totalTransfer}</span>
+            </div>
+
+            <div class="dashed"></div>
+
+            <div class="total-row">
+              <span>TOTAL REVENUE</span>
+              <span>₦${grandTotal.toLocaleString()}</span>
+            </div>
+
+            <div class="dashed"></div>
+
+            <!-- Footer -->
+            <div class="footer">
+              <p class="bold">Thank you for your patronage!</p>
+              <p style="margin-top: 2px;">Printed: ${format(new Date(), "dd/MM/yyyy HH:mm")}</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    printDoc.write(htmlContent);
+    printDoc.close();
+
+    printFrame.contentWindow?.focus();
+    printFrame.contentWindow?.print();
+
+    setTimeout(() => {
+      document.body.removeChild(printFrame);
+    }, 100);
+  };
 
   const generatePDFReport = () => {
     const doc = new jsPDF() as any;
@@ -114,25 +703,211 @@ export function ExportReports() {
             })
           : allOrders;
 
-      const tableData = filteredOrders.map((order) => {
-        const orderDate = new Date(order.createdAt);
-        return [
-          format(orderDate, "MM/dd/yyyy HH:mm"),
-          order.paymentMethod,
-          `N${order.total.toLocaleString()}`,
-        ];
-      });
-
-      const totalRevenue = filteredOrders.reduce(
-        (sum, order) => sum + order.total,
-        0,
+      // Group orders by day
+      const ordersByDay = filteredOrders.reduce(
+        (acc, order) => {
+          const orderDate = new Date(order.createdAt);
+          const dayKey = format(orderDate, "yyyy-MM-dd");
+          if (!acc[dayKey]) {
+            acc[dayKey] = [];
+          }
+          acc[dayKey].push(order);
+          return acc;
+        },
+        {} as Record<string, typeof filteredOrders>,
       );
+
+      const tableData: any[] = [];
+      let totalRevenue = 0;
+
+      // Sort days chronologically
+      const sortedDays = Object.keys(ordersByDay).sort();
+
+      sortedDays.forEach((dayKey, dayIndex) => {
+        const dayOrders = ordersByDay[dayKey];
+        const dayDate = new Date(dayKey);
+
+        // Separate orders by shift (Morning: 6 AM - 5:59 PM, Night: 6 PM - 5:59 AM)
+        const morningOrders = dayOrders.filter((order) => {
+          const hour = new Date(order.createdAt).getHours();
+          return hour >= 6 && hour < 18;
+        });
+        const nightOrders = dayOrders.filter((order) => {
+          const hour = new Date(order.createdAt).getHours();
+          return hour >= 18 || hour < 6;
+        });
+
+        const dayTotal = dayOrders.reduce((sum, order) => sum + order.total, 0);
+
+        // Day header
+        tableData.push([
+          {
+            content: `${format(dayDate, "EEEE, MMMM dd, yyyy")} - ${dayOrders.length} orders`,
+            colSpan: 5,
+            styles: {
+              fontStyle: "bold",
+              fillColor: [220, 220, 220],
+              fontSize: 11,
+            },
+          },
+        ]);
+
+        // Morning Shift
+        if (morningOrders.length > 0) {
+          const morningTotal = morningOrders.reduce(
+            (sum, order) => sum + order.total,
+            0,
+          );
+          const morningCash = morningOrders.filter(
+            (o) => o.paymentMethod === "Cash",
+          ).length;
+          const morningTransfer = morningOrders.filter(
+            (o) => o.paymentMethod === "Transfer",
+          ).length;
+
+          tableData.push([
+            {
+              content: `☀️ Morning Shift (6 AM - 6 PM) - ${morningOrders.length} orders`,
+              colSpan: 5,
+              styles: {
+                fontStyle: "bold",
+                fillColor: [255, 248, 220],
+                fontSize: 10,
+              },
+            },
+          ]);
+
+          morningOrders.forEach((order) => {
+            const orderTime = new Date(order.createdAt);
+            tableData.push([
+              format(orderTime, "hh:mm a"),
+              "Morning",
+              order.paymentMethod,
+              order.items.length.toString(),
+              `N${order.total.toLocaleString()}`,
+            ]);
+          });
+
+          tableData.push([
+            {
+              content: `Morning Total (Cash: ${morningCash}, Transfer: ${morningTransfer}):`,
+              colSpan: 4,
+              styles: {
+                fontStyle: "bold",
+                halign: "right",
+                fillColor: [255, 253, 240],
+              },
+            },
+            {
+              content: `N${morningTotal.toLocaleString()}`,
+              styles: {
+                fontStyle: "bold",
+                fillColor: [255, 253, 240],
+              },
+            },
+          ]);
+        }
+
+        // Night Shift
+        if (nightOrders.length > 0) {
+          const nightTotal = nightOrders.reduce(
+            (sum, order) => sum + order.total,
+            0,
+          );
+          const nightCash = nightOrders.filter(
+            (o) => o.paymentMethod === "Cash",
+          ).length;
+          const nightTransfer = nightOrders.filter(
+            (o) => o.paymentMethod === "Transfer",
+          ).length;
+
+          tableData.push([
+            {
+              content: `🌙 Night Shift (6 PM - 6 AM) - ${nightOrders.length} orders`,
+              colSpan: 5,
+              styles: {
+                fontStyle: "bold",
+                fillColor: [230, 230, 250],
+                fontSize: 10,
+              },
+            },
+          ]);
+
+          nightOrders.forEach((order) => {
+            const orderTime = new Date(order.createdAt);
+            tableData.push([
+              format(orderTime, "hh:mm a"),
+              "Night",
+              order.paymentMethod,
+              order.items.length.toString(),
+              `N${order.total.toLocaleString()}`,
+            ]);
+          });
+
+          tableData.push([
+            {
+              content: `Night Total (Cash: ${nightCash}, Transfer: ${nightTransfer}):`,
+              colSpan: 4,
+              styles: {
+                fontStyle: "bold",
+                halign: "right",
+                fillColor: [240, 240, 255],
+              },
+            },
+            {
+              content: `N${nightTotal.toLocaleString()}`,
+              styles: {
+                fontStyle: "bold",
+                fillColor: [240, 240, 255],
+              },
+            },
+          ]);
+        }
+
+        // Day subtotal
+        const cashCount = dayOrders.filter(
+          (o) => o.paymentMethod === "Cash",
+        ).length;
+        const transferCount = dayOrders.filter(
+          (o) => o.paymentMethod === "Transfer",
+        ).length;
+
+        tableData.push([
+          {
+            content: `Day Total (Cash: ${cashCount}, Transfer: ${transferCount}):`,
+            colSpan: 4,
+            styles: {
+              fontStyle: "bold",
+              halign: "right",
+              fillColor: [245, 245, 245],
+            },
+          },
+          {
+            content: `N${dayTotal.toLocaleString()}`,
+            styles: {
+              fontStyle: "bold",
+              fillColor: [245, 245, 245],
+            },
+          },
+        ]);
+
+        totalRevenue += dayTotal;
+
+        // Add spacing between days
+        if (dayIndex < sortedDays.length - 1) {
+          tableData.push([
+            { content: "", colSpan: 5, styles: { minCellHeight: 3 } },
+          ]);
+        }
+      });
 
       autoTable(doc, {
         startY: startY,
-        head: [["Date & Time", "Payment Method", "Amount"]],
+        head: [["Time", "Shift", "Payment", "Items", "Amount"]],
         body: tableData,
-        foot: [["", "Total Revenue:", `N${totalRevenue.toLocaleString()}`]],
+        foot: [
+          ["", "", "", "Grand Total:", `N${totalRevenue.toLocaleString()}`],
+        ],
         theme: "grid",
         headStyles: {
           fillColor: [66, 139, 202],
@@ -147,16 +922,18 @@ export function ExportReports() {
           textColor: [0, 0, 0],
         },
         styles: {
-          fontSize: 11,
-          cellPadding: 3,
+          fontSize: 9,
+          cellPadding: 2,
           textColor: [0, 0, 0],
           lineColor: [0, 0, 0],
           lineWidth: 0.3,
         },
         columnStyles: {
-          0: { cellWidth: 50 },
-          1: { cellWidth: 40 },
-          2: { cellWidth: 40, halign: "right" },
+          0: { cellWidth: 30 },
+          1: { cellWidth: 28, halign: "center" },
+          2: { cellWidth: 28, halign: "center" },
+          3: { cellWidth: 20, halign: "center" },
+          4: { cellWidth: 34, halign: "right" },
         },
       });
     } else if (selectedReport === "orders" && allOrders) {
@@ -297,6 +1074,83 @@ export function ExportReports() {
           3: { cellWidth: 35, halign: "center" },
         },
       });
+    } else if (selectedReport === "users" && accessCodes) {
+      const tableData = accessCodes.map((code) => {
+        const createdDate = new Date(code.createdAt);
+        const expiresDate = code.expiresAt ? new Date(code.expiresAt) : null;
+        const statusText = !code.isActive
+          ? "Deactivated"
+          : expiresDate && expiresDate < new Date()
+            ? "Expired"
+            : "Active";
+
+        return [
+          code.code,
+          code.role.charAt(0).toUpperCase() + code.role.slice(1),
+          code.shift
+            ? code.shift.charAt(0).toUpperCase() + code.shift.slice(1)
+            : "N/A",
+          code.usedCount.toString(),
+          format(createdDate, "MM/dd/yyyy"),
+          expiresDate ? format(expiresDate, "MM/dd/yyyy") : "No Expiry",
+          statusText,
+        ];
+      });
+
+      const activeCount = accessCodes.filter((c) => c.isActive).length;
+      const totalUsage = accessCodes.reduce(
+        (sum, code) => sum + code.usedCount,
+        0,
+      );
+
+      autoTable(doc, {
+        startY: startY,
+        head: [
+          ["Code", "Role", "Shift", "Uses", "Created", "Expires", "Status"],
+        ],
+        body: tableData,
+        foot: [
+          ["", "", "", "", "", "", ""],
+          [
+            `Total Codes: ${accessCodes.length}`,
+            `Active: ${activeCount}`,
+            "",
+            `Total Uses: ${totalUsage}`,
+            "",
+            "",
+            "",
+          ],
+        ],
+        theme: "grid",
+        headStyles: {
+          fillColor: [66, 139, 202],
+          fontStyle: "bold",
+          fontSize: 10,
+          textColor: [255, 255, 255],
+        },
+        footStyles: {
+          fillColor: [240, 240, 240],
+          fontStyle: "bold",
+          fontSize: 10,
+          textColor: [0, 0, 0],
+        },
+        styles: {
+          fontSize: 9,
+          cellPadding: 2,
+          textColor: [0, 0, 0],
+          lineColor: [0, 0, 0],
+          lineWidth: 0.3,
+        },
+        columnStyles: {
+          0: { cellWidth: 25, halign: "center" },
+          1: { cellWidth: 25, halign: "center" },
+          2: { cellWidth: 25, halign: "center" },
+          3: { cellWidth: 20, halign: "center" },
+          4: { cellWidth: 30, halign: "center" },
+          5: { cellWidth: 30, halign: "center" },
+          6: { cellWidth: 25, halign: "center" },
+        },
+      });
     } else {
       doc.setFontSize(10);
       doc.text("No data available for this report type.", 15, startY);
@@ -311,7 +1165,11 @@ export function ExportReports() {
 
     try {
       if (exportFormat === "pdf") {
-        generatePDFReport();
+        if (selectedReport === "sales" && salesFormat === "receipt") {
+          generateReceiptStylePDF();
+        } else {
+          generatePDFReport();
+        }
         toast({
           title: "Report Downloaded",
           description: `Your ${selectedReport} report has been downloaded as PDF`,
@@ -473,6 +1331,30 @@ export function ExportReports() {
             </div>
           </div>
 
+          {/* Sales Format Selection - Only show for sales reports */}
+          {selectedReport === "sales" && (
+            <div className="space-y-3">
+              <label className="text-sm font-medium">Report Style</label>
+              <Select
+                value={salesFormat}
+                onValueChange={(v) => setSalesFormat(v as SalesFormat)}
+              >
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="detailed">Detailed Table View</SelectItem>
+                  <SelectItem value="receipt">Receipt Style</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {salesFormat === "detailed"
+                  ? "Complete breakdown with shift details and all transactions"
+                  : "Compact receipt-style summary format"}
+              </p>
+            </div>
+          )}
+
           {/* Export Format */}
           <div className="space-y-3">
             <label className="text-sm font-medium">Export Format</label>
@@ -491,24 +1373,48 @@ export function ExportReports() {
             </Select>
           </div>
 
-          {/* Export Button */}
-          <Button
-            onClick={handleExport}
-            disabled={isExporting}
-            className="w-full sm:w-auto gap-2"
-          >
-            {isExporting ? (
-              <>
-                <span className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <Download className="w-4 h-4" />
-                Export Report
-              </>
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button
+              onClick={handleExport}
+              disabled={isExporting}
+              className="w-full sm:w-auto gap-2"
+            >
+              {isExporting ? (
+                <>
+                  <span className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4" />
+                  Export Report
+                </>
+              )}
+            </Button>
+
+            {/* Print Button - Only show for sales receipt format */}
+            {selectedReport === "sales" && salesFormat === "receipt" && (
+              <Button
+                onClick={handlePrint}
+                disabled={isPrinting}
+                variant="outline"
+                className="w-full sm:w-auto gap-2"
+              >
+                {isPrinting ? (
+                  <>
+                    <span className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                    Preparing...
+                  </>
+                ) : (
+                  <>
+                    <Printer className="w-4 h-4" />
+                    Print Receipt
+                  </>
+                )}
+              </Button>
             )}
-          </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

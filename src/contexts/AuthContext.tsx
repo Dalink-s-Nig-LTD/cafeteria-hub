@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Validate the code via Convex
       const result = await useCodeMutation({ code: inputCode });
 
-      if (result) {
+      if (result && result.role) {
         setRole(result.role);
         setCode(inputCode);
         localStorage.setItem("userRole", result.role);
@@ -75,23 +75,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: true };
       }
 
-      return { success: false, error: "Invalid access code" };
+      return { success: false, error: "Incorrect Access Code" };
     } catch (error) {
       console.error("Login error:", error);
-      let errorMsg = "Login failed. Please try again.";
+      let errorMsg = "Incorrect Access Code";
       if (error instanceof Error) {
-        const msg = error.message.toLowerCase();
-        if (msg.includes("[convex") || msg.includes("server error")) {
-          errorMsg = "Unable to connect. Please check your internet.";
-        } else if (msg.includes("invalid")) {
-          errorMsg = "Invalid access code";
-        } else if (msg.includes("expired")) {
-          errorMsg = "Access code has expired";
-        } else if (msg.includes("deactivated")) {
-          errorMsg = "Access code has been deactivated";
-        } else if (!msg.includes("[convex")) {
-          errorMsg = error.message;
-        }
+        errorMsg = error.message;
       }
       return {
         success: false,

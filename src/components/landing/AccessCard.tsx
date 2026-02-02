@@ -35,7 +35,7 @@ export function AccessCard({ type, onSuccess }: AccessCardProps) {
       } else {
         toast({
           title: "Access Denied",
-          description: result.error || "Invalid access code. Please try again.",
+          description: result.error || "Incorrect Access Code",
           variant: "destructive",
         });
         setCode("");

@@ -60,12 +60,19 @@ export const useCode = mutation({
       .first();
 
     if (!accessCode) {
-      return {
-        error: "Invalid code, please contact admin.",
-        sessionId: null,
-        code: args.code,
-        role: null
-      };
+      throw new Error("Incorrect Access Code");
+    }
+
+    if (!accessCode.isActive) {
+      throw new Error("Access code has been deactivated");
+    }
+
+    if (accessCode.expiresAt && accessCode.expiresAt < Date.now()) {
+      throw new Error("Access code has expired");
+    }
+
+    if (accessCode.maxUses && accessCode.usedCount >= accessCode.maxUses) {
+      throw new Error("Access code has reached maximum uses");
     }
 
     await ctx.db.patch(accessCode._id, {

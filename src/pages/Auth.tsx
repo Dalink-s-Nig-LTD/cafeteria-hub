@@ -114,7 +114,7 @@ export function Auth() {
           errMsg.includes("server error")
         ) {
           // Generic Convex errors only if not caught above
-          msg = "Unable to connect. Please check your internet and try again.";
+          msg = "Incorrect email or password.";
         } else {
           msg = "Authentication failed. Please try again.";
         }
@@ -346,10 +346,7 @@ export function Auth() {
               <h2 className="text-xl font-display font-bold text-foreground mb-3">
                 New Era Cafeteria POS
               </h2>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                Streamline your cafeteria operations with our modern point of
-                sale system. Fast, efficient, and designed for your needs.
-              </p>
+              <p className="text-muted-foreground text-sm leading-relaxed"></p>
             </div>
 
             {/* Dots indicator */}
